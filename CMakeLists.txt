@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(HorrorCastle VERSION 1.2.0 LANGUAGES C CXX)
+project(HorrorCastle VERSION 1.3.0 LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,7 +17,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(JUCE)
 
 juce_add_plugin(HorrorCastle
-    VERSION "1.2.0"
+    VERSION "1.3.0"
     COMPANY_NAME "SleepFighterStudios"
     COMPANY_WEBSITE ""
     FORMATS VST3 AU Standalone
@@ -54,6 +54,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/HorrorCastleArchitecture.cpp
     Source/HorrorCastle/CastleEngine.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
+    Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -96,6 +97,7 @@ target_sources(HorrorCastleSignatureCheck PRIVATE
     Source/HorrorCastle/HorrorCastleArchitecture.cpp
     Source/HorrorCastle/CastleEngine.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
+    Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
