@@ -32,9 +32,10 @@ jobs:
 
       - name: Run Living Engines check
         run: |
-          CHECKER="$(find build -type f -perm -111 -name 'Horror Castle Living Engines Check' -print -quit)"
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleLivingEnginesCheck' -o -name 'Horror Castle Living Engines Check' \) -print -quit)"
           if [ -z "$CHECKER" ]; then
             echo "Living Engines checker executable was not found"
             exit 1
           fi
+          echo "Running: $CHECKER"
           "$CHECKER"
