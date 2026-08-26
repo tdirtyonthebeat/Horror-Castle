@@ -7,10 +7,14 @@ def require(cond,msg):
     if not cond: fail.append(msg)
 
 def text(path): return (root/path).read_text(errors='replace')
-cmake=text('CMakeLists.txt'); params=text('Source/HorrorCastle/CastleParameters.h'); engine=text('Source/HorrorCastle/CastleEngine.cpp'); curse=text('Source/HorrorCastle/CurseMatrix.h'); processor=text('Source/Core/HorrorCastleProcessor.cpp')
+cmake=text('CMakeLists.txt'); params=text('Source/HorrorCastle/CastleParameters.h'); curse=text('Source/HorrorCastle/CurseMatrix.h'); processor=text('Source/Core/HorrorCastleProcessor.cpp')
+engine_files=['Source/HorrorCastle/CastleEngineCore.cpp','Source/HorrorCastle/CastleEngineScene.cpp','Source/HorrorCastle/CastleEngineRender.cpp']
+engine='\n'.join(text(f) for f in engine_files)
 require('VERSION 1.3.0' in cmake and 'VERSION "1.3.0"' in cmake,'CMake version is not 1.3.0')
 for f in ['PossessionEngine.cpp','PossessionEngine.h','RitualsEngine.cpp','RitualsEngine.h','Grimoire.cpp','Grimoire.h','GraveChamber.cpp']:
     require((root/'Source/HorrorCastle'/f).exists(),f'missing {f}')
+for f in engine_files:
+    require((root/f).exists(),f'missing split engine module {f}')
 for pid in ['corpse.position','corpse.rot','corpse.formant','corpse.inharmonic','possession.bloodFeed','possession.aetherLeak','possession.soulExchange','possession.haunt','rituals.enabled','rituals.pattern','rituals.rate','rituals.bpm']:
     require(pid in params,f'missing parameter {pid}')
 require('Destinations = 22' in curse,'HEX 2.0 destination count is not 22')
@@ -22,11 +26,14 @@ require((root/'Source/HorrorCastle/SpectralCorpseEngine.cpp').exists(),'missing 
 require((root/'Source/HorrorCastle/RitualFMEngine.cpp').exists(),'missing RitualFMEngine.cpp')
 require((root/'Source/HorrorCastle/BoneResonatorEngine.cpp').exists(),'missing BoneResonatorEngine.cpp')
 require('ritualFM.renderSample' in engine,'Ritual FM is not wired into the generator path')
+require('boneResonator.renderSample' in engine and 'cryptBone' in text('Source/HorrorCastle/CastleEngine.h'),'Bone Resonator 2.0 is not active in CRYPT Chamber III')
 require('isPitchWheel' in engine and 'getControllerNumber() == 1' in engine and 'isChannelPressure' in engine and 'isAftertouch' in engine,'expressive MIDI path is incomplete')
 require('Mod Wheel' in params and 'Aftertouch' in params,'HEX expressive sources are not exposed')
 require('spectralCorpse.renderSample' in engine,'CRYPT CORPSE is not wired to spectral resynthesis')
 require('samplePosition <= n' in engine,'sample-accurate MIDI event dispatch missing')
 require('modWheel, pressure' in engine,'HEX live expression values are not forwarded')
+require(all(f in cmake for f in ['CastleEngineCore.cpp','CastleEngineScene.cpp','CastleEngineRender.cpp']),'CMake is not using split Castle engine modules')
+require('Source/HorrorCastle/CastleEngine.cpp' not in cmake,'legacy monolithic CastleEngine.cpp is still compiled')
 require('HorrorCastleLivingEnginesCheck' in cmake and 'LivingEnginesCheck.cpp' in cmake,'focused Living Engines DSP gate is not wired')
 living=text('tools/LivingEnginesCheck.cpp')
 require('BoneResonatorEngine' in living and 'RitualFMEngine' in living,'Living Engines gate does not cover both new engine families')
@@ -61,4 +68,5 @@ print('PASS  sample-accurate MIDI dispatch')
 print('PASS  independent release Source/ naming scan')
 print('PASS  Stone & Shadow hybrid skin + 40-spell Grimoire + Spectral Corpse UI')
 print('PASS  Living Engines Ritual FM + expressive MIDI + one-click Grimoire')
-print('PASS  Living Engines focused DSP gate + Bone Resonator prototype')
+print('PASS  Living Engines focused DSP gate + active Bone Resonator 2.0')
+print('PASS  split Castle engine core / scene / render architecture')
