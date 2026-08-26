@@ -8,6 +8,7 @@
 #include "PossessionEngine.h"
 #include "RitualsEngine.h"
 #include "SpectralCorpseEngine.h"
+#include "RitualFMEngine.h"
 #include <array>
 #include <cmath>
 #include <atomic>
@@ -37,7 +38,10 @@ private:
   // inherit phase discontinuities from the shared fundamental oscillators.
   std::array<float,3> cryptAux1{}, cryptAux2{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
+  std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
   std::array<float,3> towerAux1{}, towerAux2{};
+  std::array<RitualFMEngine::VoiceState,3> towerRitualFM{};
+  float polyPressure=0.f;
   Env amp,iron;
  };
  std::array<Voice,MaxVoices> voices; double sr=44100; int blockSize=512; float master=.72f; CastlePatchArchitecture patch{};
@@ -51,7 +55,9 @@ private:
  PossessionEngine possession; PossessionEngine::Parameters possessionParams{};
  RitualsEngine rituals; RitualsEngine::Parameters ritualsParams{};
  SpectralCorpseEngine spectralCorpse;
+ RitualFMEngine ritualFM;
  float corpsePosition=.34f, corpseRot=.22f, corpseFormant=0.f, corpseInharmonic=.08f;
+ float modWheel=0.f, channelPressure=0.f, pitchBendSemitones=0.f;
  float globalGlide=0.f; int globalUnison=1; float lastPlayedNote=60.f;
  uint32_t rng=0xA341316Cu;
  void on(int,int);void off(int);Voice* steal();float osc(GeneratorType,float,float,float);float rnd();float filter(float,float&,const FilterCell&,float);void scene(Voice&,const SceneArchitecture&,float&,float&,float,const std::array<float, CurseMatrix::Destinations>&,bool);
