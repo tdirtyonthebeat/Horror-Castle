@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "../Source/HorrorCastle/RitualFMEngine.h"
 #include "../Source/HorrorCastle/BoneResonatorEngine.h"
+#include "../Source/HorrorCastle/WraithBreathEngine.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -8,6 +9,7 @@
 namespace {
 using horrorcastle::RitualFMEngine;
 using horrorcastle::BoneResonatorEngine;
+using horrorcastle::WraithBreathEngine;
 
 std::vector<float> renderFM(float topology, float character, float expression, bool crypt)
 {
@@ -36,6 +38,22 @@ std::vector<float> renderBone(float material, float character, float expression,
 
     for (int i = 0; i < samples; ++i)
         out.push_back(engine.renderSample(state, 110.0f, material, character,
+                                          expression, velocity, sampleRate));
+    return out;
+}
+
+std::vector<float> renderWraith(float veil, float haunt, float expression,
+                                float velocity = 0.82f)
+{
+    constexpr double sampleRate = 48000.0;
+    constexpr int samples = 48000;
+    WraithBreathEngine engine;
+    WraithBreathEngine::VoiceState state;
+    std::vector<float> out;
+    out.reserve(samples);
+
+    for (int i = 0; i < samples; ++i)
+        out.push_back(engine.renderSample(state, 110.0f, veil, haunt,
                                           expression, velocity, sampleRate));
     return out;
 }
@@ -137,6 +155,32 @@ int main()
     std::cout << "INFO  Bone expression difference=" << boneExpressionDifference << '\n';
     check(finite(bonePressed) && boneExpressionDifference > 0.12f,
           "Bone Resonator responds to performance expression");
+
+    const auto wraithThin = renderWraith(0.15f, 0.70f, 0.50f);
+    const auto wraithVeiled = renderWraith(0.85f, 0.70f, 0.50f);
+    const auto wraithVeilDifference = difference(wraithThin, wraithVeiled);
+    std::cout << "INFO  Wraith veil difference=" << wraithVeilDifference
+              << " rms(thin/veiled)=" << rms(wraithThin)
+              << "/" << rms(wraithVeiled) << '\n';
+    check(finite(wraithThin) && finite(wraithVeiled)
+              && rms(wraithThin) > 0.001f && rms(wraithVeiled) > 0.001f,
+          "Wraith breath-body remains bounded and audible");
+    check(wraithVeilDifference > 0.15f,
+          "Wraith veil changes membrane material and damping");
+
+    const auto wraithLoose = renderWraith(0.50f, 0.10f, 0.50f);
+    const auto wraithCoupled = renderWraith(0.50f, 0.90f, 0.50f);
+    const auto wraithCouplingDifference = difference(wraithLoose, wraithCoupled);
+    std::cout << "INFO  Wraith coupling difference=" << wraithCouplingDifference << '\n';
+    check(finite(wraithCoupled) && wraithCouplingDifference > 0.15f,
+          "Wraith HAUNT changes membrane/air energy exchange");
+
+    const auto wraithWhisper = renderWraith(0.50f, 0.70f, 0.05f);
+    const auto wraithPressure = renderWraith(0.50f, 0.70f, 1.00f);
+    const auto wraithExpressionDifference = difference(wraithWhisper, wraithPressure);
+    std::cout << "INFO  Wraith expression difference=" << wraithExpressionDifference << '\n';
+    check(finite(wraithPressure) && wraithExpressionDifference > 0.15f,
+          "Wraith pressure changes excitation and body coupling");
 
     std::cout << (failures == 0
         ? "\nHorror Castle Living Engines check passed.\n"
