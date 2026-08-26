@@ -9,6 +9,7 @@
 #include "RitualsEngine.h"
 #include "SpectralCorpseEngine.h"
 #include "RitualFMEngine.h"
+#include "BoneResonatorEngine.h"
 #include <array>
 #include <cmath>
 #include <atomic>
@@ -39,6 +40,7 @@ private:
   std::array<float,3> cryptAux1{}, cryptAux2{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
+  std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
   std::array<float,3> towerAux1{}, towerAux2{};
   std::array<RitualFMEngine::VoiceState,3> towerRitualFM{};
   float polyPressure=0.f;
@@ -56,6 +58,7 @@ private:
  RitualsEngine rituals; RitualsEngine::Parameters ritualsParams{};
  SpectralCorpseEngine spectralCorpse;
  RitualFMEngine ritualFM;
+ BoneResonatorEngine boneResonator;
  float corpsePosition=.34f, corpseRot=.22f, corpseFormant=0.f, corpseInharmonic=.08f;
  float modWheel=0.f, channelPressure=0.f, pitchBendSemitones=0.f;
  float globalGlide=0.f; int globalUnison=1; float lastPlayedNote=60.f;
