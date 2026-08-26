@@ -52,7 +52,9 @@ target_sources(HorrorCastle PRIVATE
     Source/Core/HorrorCastleProcessor.cpp
 
     Source/HorrorCastle/HorrorCastleArchitecture.cpp
-    Source/HorrorCastle/CastleEngine.cpp
+    Source/HorrorCastle/CastleEngineCore.cpp
+    Source/HorrorCastle/CastleEngineScene.cpp
+    Source/HorrorCastle/CastleEngineRender.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
@@ -95,7 +97,9 @@ juce_generate_juce_header(HorrorCastleSignatureCheck)
 target_sources(HorrorCastleSignatureCheck PRIVATE
     tools/SignatureCheck.cpp
     Source/HorrorCastle/HorrorCastleArchitecture.cpp
-    Source/HorrorCastle/CastleEngine.cpp
+    Source/HorrorCastle/CastleEngineCore.cpp
+    Source/HorrorCastle/CastleEngineScene.cpp
+    Source/HorrorCastle/CastleEngineRender.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
