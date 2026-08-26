@@ -107,12 +107,14 @@ float ReliquaryEngine::renderSample(VoiceState& state,
     state.glassFeedback = std::tanh(glassSum * 5.5f);
     state.cavityFeedback = std::tanh(cavitySum * 7.0f);
 
-    const float glassGain = 8.5f + 6.0f * aperture + 4.0f * aether;
-    const float cavityGain = 5.0f + 5.0f * (1.0f - aperture) + 3.0f * aether;
-    const float air = (glassSum - cavitySum) * shimmer * (0.30f * aether);
+    // Keep the sympathetic system dynamic rather than pinning it against the
+    // output limiter; the surrounding TOWER chamber still contributes air.
+    const float glassGain = 3.2f + 2.2f * aperture + 1.5f * aether;
+    const float cavityGain = 1.8f + 1.6f * (1.0f - aperture) + 1.2f * aether;
+    const float air = (glassSum - cavitySum) * shimmer * (0.18f * aether);
     const float body = glassSum * glassGain + cavitySum * cavityGain + air;
 
-    return juce::jlimit(-1.0f, 1.0f, std::tanh(body * 1.35f));
+    return juce::jlimit(-1.0f, 1.0f, std::tanh(body * 0.85f));
 }
 
 } // namespace horrorcastle
