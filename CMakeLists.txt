@@ -58,6 +58,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
+    Source/HorrorCastle/WraithBreathEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -103,6 +104,7 @@ target_sources(HorrorCastleSignatureCheck PRIVATE
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
+    Source/HorrorCastle/WraithBreathEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -131,6 +133,7 @@ target_sources(HorrorCastleLivingEnginesCheck PRIVATE
     tools/LivingEnginesCheck.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
+    Source/HorrorCastle/WraithBreathEngine.cpp
 )
 target_compile_definitions(HorrorCastleLivingEnginesCheck PRIVATE
     JUCE_WEB_BROWSER=0
