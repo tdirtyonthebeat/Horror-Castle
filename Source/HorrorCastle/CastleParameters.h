@@ -37,11 +37,11 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
             if (isCrypt)
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                            {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator",
-                            "Undercrypt", "Corpse", "Bone Resonator", "Rotator"}, defaultType);
+                            "Undercrypt", "Corpse", "Bone Resonator", "Rotator", "Wraith"}, defaultType);
             else
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                            {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator",
-                            "Bell Glass", "Spectral Spire", "Astral FM", "Prism"}, defaultType);
+                            "Bell Glass", "Spectral Spire", "Astral FM", "Prism", "Reliquary"}, defaultType);
             const float defaultLevel = isCrypt
                 ? (g == 0 ? .62f : (g == 1 ? .26f : .16f))
                 : (g == 0 ? .58f : (g == 1 ? .28f : .20f));
@@ -97,20 +97,16 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     addFloat("global.unison", "Castle Unison", 1.f, 8.f, 1.f);
     addFloat("global.hex", "Hex Amount", 0.f, 1.f, 1.f);
 
-    // SPECTRAL CORPSE: CRYPT Chamber II resynthesis controls. Kept global for
-    // v1.2 so presets remain compact; a model browser/importer can bind here later.
     addFloat("corpse.position", "Corpse Position", 0.f, 1.f, .34f);
     addFloat("corpse.rot", "Corpse Rot", 0.f, 1.f, .22f);
     addFloat("corpse.formant", "Corpse Formant", -1.f, 1.f, 0.f);
     addFloat("corpse.inharmonic", "Corpse Inharmonicity", 0.f, 1.f, .08f);
 
-    // POSSESSION: pre-Ritual cross-chamber infection.
     addFloat("possession.bloodFeed", "Blood Feed", 0.f, 1.f, 0.f);
     addFloat("possession.aetherLeak", "Aether Leak", 0.f, 1.f, 0.f);
     addFloat("possession.soulExchange", "Soul Exchange", 0.f, 1.f, 0.f);
     addFloat("possession.haunt", "Haunt", 0.f, 1.f, 0.f);
 
-    // RITUALS: performance sequencer. Pattern indices are stable for preset compatibility.
     addBool("rituals.enabled", "Rituals Enabled", false);
     addChoice("rituals.pattern", "Rituals Pattern",
               {"Procession", "Ascension", "Descent", "Circle", "Seance", "Possession", "Sacrifice", "Chaos"}, 0);
@@ -120,8 +116,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     addFloat("rituals.probability", "Rituals Probability", 0.f, 1.f, 1.f);
     addFloat("rituals.swing", "Rituals Swing", 0.f, 1.f, 0.f);
     addFloat("rituals.octaves", "Rituals Octaves", 1.f, 4.f, 1.f);
-    // HEX + CURSES: eight routable occult modulation lanes. v1.3 appends
-    // performance sources so existing source indices 0..6 remain stable.
+
     const char* curseSources[] = {"Off", "Blood", "Wraith", "Velocity", "Key", "Random", "Pulse", "Mod Wheel", "Aftertouch"};
     const char* curseKinds[] = {"Clean", "Corrupt", "Haunt", "Possession", "Decay", "Madness", "Blood"};
     const char* curseDests[] = {"Off", "Crypt Cutoff", "Tower Cutoff", "Crypt Shape", "Tower Shape", "FM Depth", "Filter Drive", "Ritual Mix", "Grave Mix", "Pitch", "Curse Depth", "Crypt Dread", "Tower Aether", "Ritual Depth", "Ritual Fury", "Ritual Feedback", "Grave Tone", "Blood Feed", "Aether Leak", "Soul Exchange", "Haunt", "Grave Feedback"};
@@ -132,11 +127,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         addChoice(prefix + "curse", "Hex Curse " + juce::String(i) + " Curse", {curseKinds[0], curseKinds[1], curseKinds[2], curseKinds[3], curseKinds[4], curseKinds[5], curseKinds[6]}, 0);
         addChoice(prefix + "destination", "Hex Curse " + juce::String(i) + " Destination", {curseDests[0], curseDests[1], curseDests[2], curseDests[3], curseDests[4], curseDests[5], curseDests[6], curseDests[7], curseDests[8], curseDests[9], curseDests[10], curseDests[11], curseDests[12], curseDests[13], curseDests[14], curseDests[15], curseDests[16], curseDests[17], curseDests[18], curseDests[19], curseDests[20], curseDests[21]}, 0);
         addFloat(prefix + "amount", "Hex Curse " + juce::String(i) + " Amount", -1.f, 1.f, 0.f);
-        // v0.9 compatibility parameter. Preserved so older Horror Castle states still load.
         addFloat(prefix + "decay", "Hex Curse " + juce::String(i) + " Legacy Decay", 0.f, 1.f, .25f);
-
-        // v0.10 programmable Curse character controls. Each Curse owns a stable,
-        // automatable parameter even when another Curse is currently selected.
         addFloat(prefix + "corruptBias", "Hex Curse " + juce::String(i) + " Corrupt Bias", -1.f, 1.f, .22f);
         addFloat(prefix + "hauntRate", "Hex Curse " + juce::String(i) + " Haunt Rate", .05f, 8.f, 1.70f);
         addFloat(prefix + "possessionFold", "Hex Curse " + juce::String(i) + " Possession Fold", 0.f, 1.f, .35f);
