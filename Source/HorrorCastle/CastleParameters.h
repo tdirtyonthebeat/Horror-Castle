@@ -120,14 +120,15 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     addFloat("rituals.probability", "Rituals Probability", 0.f, 1.f, 1.f);
     addFloat("rituals.swing", "Rituals Swing", 0.f, 1.f, 0.f);
     addFloat("rituals.octaves", "Rituals Octaves", 1.f, 4.f, 1.f);
-    // HEX + CURSES: eight routable occult modulation lanes.
-    const char* curseSources[] = {"Off", "Blood", "Wraith", "Velocity", "Key", "Random", "Pulse"};
+    // HEX + CURSES: eight routable occult modulation lanes. v1.3 appends
+    // performance sources so existing source indices 0..6 remain stable.
+    const char* curseSources[] = {"Off", "Blood", "Wraith", "Velocity", "Key", "Random", "Pulse", "Mod Wheel", "Aftertouch"};
     const char* curseKinds[] = {"Clean", "Corrupt", "Haunt", "Possession", "Decay", "Madness", "Blood"};
     const char* curseDests[] = {"Off", "Crypt Cutoff", "Tower Cutoff", "Crypt Shape", "Tower Shape", "FM Depth", "Filter Drive", "Ritual Mix", "Grave Mix", "Pitch", "Curse Depth", "Crypt Dread", "Tower Aether", "Ritual Depth", "Ritual Fury", "Ritual Feedback", "Grave Tone", "Blood Feed", "Aether Leak", "Soul Exchange", "Haunt", "Grave Feedback"};
     for (int i = 1; i <= 8; ++i)
     {
         auto prefix = juce::String("hex.curse") + juce::String(i) + ".";
-        addChoice(prefix + "source", "Hex Curse " + juce::String(i) + " Source", {curseSources[0], curseSources[1], curseSources[2], curseSources[3], curseSources[4], curseSources[5], curseSources[6]}, 0);
+        addChoice(prefix + "source", "Hex Curse " + juce::String(i) + " Source", {curseSources[0], curseSources[1], curseSources[2], curseSources[3], curseSources[4], curseSources[5], curseSources[6], curseSources[7], curseSources[8]}, 0);
         addChoice(prefix + "curse", "Hex Curse " + juce::String(i) + " Curse", {curseKinds[0], curseKinds[1], curseKinds[2], curseKinds[3], curseKinds[4], curseKinds[5], curseKinds[6]}, 0);
         addChoice(prefix + "destination", "Hex Curse " + juce::String(i) + " Destination", {curseDests[0], curseDests[1], curseDests[2], curseDests[3], curseDests[4], curseDests[5], curseDests[6], curseDests[7], curseDests[8], curseDests[9], curseDests[10], curseDests[11], curseDests[12], curseDests[13], curseDests[14], curseDests[15], curseDests[16], curseDests[17], curseDests[18], curseDests[19], curseDests[20], curseDests[21]}, 0);
         addFloat(prefix + "amount", "Hex Curse " + juce::String(i) + " Amount", -1.f, 1.f, 0.f);
