@@ -9,7 +9,7 @@ static float polyBlep(float phase, float dt){
     if(phase>1.f-dt){const float x=(phase-1.f)/dt;return x*x+x+x+1.f;}
     return 0.f;
 }
-static GeneratorType gt(int v){ return static_cast<GeneratorType>(juce::jlimit(0,11,v)); }
+static GeneratorType gt(int v){ return static_cast<GeneratorType>(juce::jlimit(0,12,v)); }
 static FilterType ft(int v){ return static_cast<FilterType>(juce::jlimit(0,8,v)); }
 static Route rt(int v){ return static_cast<Route>(juce::jlimit(0,3,v)); }
 
@@ -64,7 +64,7 @@ void CastleEngine::setParameters(const juce::AudioProcessorValueTreeState& apvts
         return juce::jlimit(0, maxIndex, (int)std::lround(get(id, (float)fallback)));
     };
     auto loadScene=[&](SceneArchitecture& s,const char* name){
-        for(int i=0;i<3;++i){auto& g=s.voice.generators[i];g.type=gt(choice(param::id(name,i+1,"type"),11,(int)g.type));g.level=get(param::id(name,i+1,"level"),g.level);g.pan=get(param::id(name,i+1,"pan"),g.pan);g.tune=get(param::id(name,i+1,"tune"),g.tune);g.shape=get(param::id(name,i+1,"shape"),g.shape);g.spread=get(param::id(name,i+1,"spread"),g.spread);g.enabled=getb(param::id(name,i+1,"enabled"),g.enabled);}
+        for(int i=0;i<3;++i){auto& g=s.voice.generators[i];g.type=gt(choice(param::id(name,i+1,"type"),12,(int)g.type));g.level=get(param::id(name,i+1,"level"),g.level);g.pan=get(param::id(name,i+1,"pan"),g.pan);g.tune=get(param::id(name,i+1,"tune"),g.tune);g.shape=get(param::id(name,i+1,"shape"),g.shape);g.spread=get(param::id(name,i+1,"spread"),g.spread);g.enabled=getb(param::id(name,i+1,"enabled"),g.enabled);}
         s.voice.noise.enabled=getb(param::noise(name,"enabled"),s.voice.noise.enabled);s.voice.noise.level=get(param::noise(name,"level"),s.voice.noise.level);
         for(int i=0;i<2;++i){auto& f=s.voice.filters[i];f.type=ft(choice(param::fid(name,i+1,"type"),8,(int)f.type));f.cutoff=get(param::fid(name,i+1,"cutoff"),f.cutoff);f.resonance=get(param::fid(name,i+1,"resonance"),f.resonance);f.drive=get(param::fid(name,i+1,"drive"),f.drive);f.enabled=getb(param::fid(name,i+1,"enabled"),f.enabled);}
         s.voice.filterRoute=rt(choice(param::route(name),3,(int)s.voice.filterRoute));s.voice.master=get(param::scene(name,"master"),s.voice.master);s.sceneBalance=get(param::scene(name,"balance"),s.sceneBalance);s.character=get(param::scene(name,"character"),s.character);s.crossSceneFM=getb(param::scene(name,"crossfm"),s.crossSceneFM);s.crossSceneRing=getb(param::scene(name,"crossring"),s.crossSceneRing);
