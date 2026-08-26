@@ -8,7 +8,7 @@ def require(cond,msg):
 
 def text(path): return (root/path).read_text(errors='replace')
 cmake=text('CMakeLists.txt'); params=text('Source/HorrorCastle/CastleParameters.h'); engine=text('Source/HorrorCastle/CastleEngine.cpp'); curse=text('Source/HorrorCastle/CurseMatrix.h'); processor=text('Source/Core/HorrorCastleProcessor.cpp')
-require('VERSION 1.2.0' in cmake and 'VERSION "1.2.0"' in cmake,'CMake version is not 1.2.0')
+require('VERSION 1.3.0' in cmake and 'VERSION "1.3.0"' in cmake,'CMake version is not 1.3.0')
 for f in ['PossessionEngine.cpp','PossessionEngine.h','RitualsEngine.cpp','RitualsEngine.h','Grimoire.cpp','Grimoire.h','GraveChamber.cpp']:
     require((root/'Source/HorrorCastle'/f).exists(),f'missing {f}')
 for pid in ['corpse.position','corpse.rot','corpse.formant','corpse.inharmonic','possession.bloodFeed','possession.aetherLeak','possession.soulExchange','possession.haunt','rituals.enabled','rituals.pattern','rituals.rate','rituals.bpm']:
@@ -19,8 +19,13 @@ require('Grimoire::CurrentStateVersion' in processor,'versioned state marker mis
 require('juce::Reverb' not in engine,'stock juce::Reverb returned to active engine')
 require('process(m, performanceMidi' in engine,'RITUALS MIDI path missing')
 require((root/'Source/HorrorCastle/SpectralCorpseEngine.cpp').exists(),'missing SpectralCorpseEngine.cpp')
+require((root/'Source/HorrorCastle/RitualFMEngine.cpp').exists(),'missing RitualFMEngine.cpp')
+require('ritualFM.renderSample' in engine,'Ritual FM is not wired into the generator path')
+require('isPitchWheel' in engine and 'getControllerNumber() == 1' in engine and 'isChannelPressure' in engine and 'isAftertouch' in engine,'expressive MIDI path is incomplete')
+require('Mod Wheel' in params and 'Aftertouch' in params,'HEX expressive sources are not exposed')
 require('spectralCorpse.renderSample' in engine,'CRYPT CORPSE is not wired to spectral resynthesis')
 require('samplePosition <= n' in engine,'sample-accurate MIDI event dispatch missing')
+require('modWheel, pressure' in engine,'HEX live expression values are not forwarded')
 for f in ['Source/UI/Theme/CastleTheme.h','Source/UI/Theme/CastleGraphics.cpp','Source/UI/Components/CastleHeaderComponent.cpp','Source/UI/Components/GrimoireComponent.cpp','Assets/castle_reference.png','Assets/StoneShadow/backdrop.png','Assets/StoneShadow/header.png','Assets/StoneShadow/crypt_frame.png','Assets/StoneShadow/tower_frame.png','Assets/StoneShadow/center_spine.png','Assets/StoneShadow/ritual_grave_frame.png','Assets/StoneShadow/hex_frame.png','Assets/StoneShadow/inspector_frame.png','Assets/StoneShadow/undercroft.png']:
     require((root/f).exists(),f'missing v1.1 UI asset/module {f}')
 require('getFactorySpells' in text('Source/HorrorCastle/Grimoire.cpp'),'expanded Grimoire metadata missing')
@@ -45,9 +50,10 @@ if fail:
     for x in fail: print('FAIL ',x)
     sys.exit(1)
 print('HORROR CASTLE STATIC VALIDATION PASSED')
-print('PASS  v1.2 version metadata')
+print('PASS  v1.3 version metadata')
 print('PASS  Possession / Rituals / Grimoire source modules')
 print('PASS  HEX 2.0 destination architecture')
 print('PASS  sample-accurate MIDI dispatch')
 print('PASS  independent release Source/ naming scan')
 print('PASS  Stone & Shadow hybrid skin + 40-spell Grimoire + Spectral Corpse UI')
+print('PASS  Living Engines Ritual FM + expressive MIDI + one-click Grimoire')
