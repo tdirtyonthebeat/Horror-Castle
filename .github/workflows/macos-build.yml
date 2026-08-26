@@ -1,0 +1,28 @@
+name: macOS Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  static-and-build:
+    runs-on: macos-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Static validation
+        run: python3 tools/static_validate.py
+
+      - name: Configure
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="$(uname -m)"
+
+      - name: Build VST3, AU, and Standalone
+        run: cmake --build build --config Release --target HorrorCastle_VST3 HorrorCastle_AU HorrorCastle_Standalone -j 3
+
+      - name: Build signature checker
+        run: cmake --build build --config Release --target HorrorCastleSignatureCheck -j 3
