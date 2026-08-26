@@ -55,6 +55,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/CastleEngine.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
+    Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -86,8 +87,7 @@ target_link_libraries(HorrorCastle PRIVATE
     juce::juce_recommended_lto_flags
 )
 
-
-# Optional headless signature regression check / offline WAV renderer.
+# Headless signature regression check / offline WAV renderer.
 juce_add_console_app(HorrorCastleSignatureCheck
     PRODUCT_NAME "Horror Castle Signature Check"
 )
@@ -98,6 +98,7 @@ target_sources(HorrorCastleSignatureCheck PRIVATE
     Source/HorrorCastle/CastleEngine.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp
     Source/HorrorCastle/RitualFMEngine.cpp
+    Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -111,6 +112,27 @@ target_compile_definitions(HorrorCastleSignatureCheck PRIVATE
     JUCE_USE_CURL=0
 )
 target_link_libraries(HorrorCastleSignatureCheck PRIVATE
+    juce::juce_audio_utils
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+)
+
+# Focused v1.3 DSP gate. This is intentionally small and fast so every PR can
+# directly measure the new Living Engines without rendering the whole plugin.
+juce_add_console_app(HorrorCastleLivingEnginesCheck
+    PRODUCT_NAME "Horror Castle Living Engines Check"
+)
+juce_generate_juce_header(HorrorCastleLivingEnginesCheck)
+target_sources(HorrorCastleLivingEnginesCheck PRIVATE
+    tools/LivingEnginesCheck.cpp
+    Source/HorrorCastle/RitualFMEngine.cpp
+    Source/HorrorCastle/BoneResonatorEngine.cpp
+)
+target_compile_definitions(HorrorCastleLivingEnginesCheck PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+target_link_libraries(HorrorCastleLivingEnginesCheck PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
     juce::juce_recommended_config_flags

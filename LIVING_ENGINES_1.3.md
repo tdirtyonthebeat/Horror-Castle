@@ -14,6 +14,20 @@ The shared FM generator is now rendered by an independent four-operator Ritual F
 - bounded feedback and index scaling remain finite at extremes
 - Shape controls topology; chamber Character and live performance expression control complexity
 
+## Bone Resonator 2.0 research prototype
+
+The next CRYPT engine is now implemented as an independently designed modal-bank prototype and compiled as part of v1.3.
+
+- ten bounded damped modes per voice state
+- continuously stretched modal spacing rather than two fixed inharmonic partials
+- virtual strike/read positions alter mode coupling
+- short noisy strike plus restrained continuous pressure/bow excitation
+- DREAD changes modal body and decay
+- performance expression changes sustain/read position and keeps held tones alive
+- a dedicated Living Engines regression target measures material and expression separation
+
+The prototype is being compiler- and regression-gated before it replaces the current active Bone Resonator path in `CastleEngine`.
+
 ## Expressive MIDI
 
 The Castle engine now responds sample-accurately to:
