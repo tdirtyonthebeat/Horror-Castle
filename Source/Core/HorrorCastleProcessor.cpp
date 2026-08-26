@@ -70,7 +70,7 @@ void HorrorCastleProcessor::getStateInformation(juce::MemoryBlock& destination)
 {
     auto state = parameters.copyState();
     state.setProperty("stateVersion", Grimoire::CurrentStateVersion, nullptr);
-    state.setProperty("productVersion", "1.2.0", nullptr);
+    state.setProperty("productVersion", "1.3.0", nullptr);
     if (auto xml = state.createXml())
         juce::AudioProcessor::copyXmlToBinary(*xml, destination);
 }
