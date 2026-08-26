@@ -50,7 +50,6 @@ juce_add_binary_data(HorrorCastleAssets
 
 target_sources(HorrorCastle PRIVATE
     Source/Core/HorrorCastleProcessor.cpp
-
     Source/HorrorCastle/HorrorCastleArchitecture.cpp
     Source/HorrorCastle/CastleEngineCore.cpp
     Source/HorrorCastle/CastleEngineScene.cpp
@@ -59,6 +58,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/WraithBreathEngine.cpp
+    Source/HorrorCastle/ReliquaryEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -67,7 +67,6 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/CurseMatrix.cpp
     Source/HorrorCastle/CurseChain.cpp
     Source/HorrorCastle/HorrorCastleEditor.cpp
-
     Source/UI/Theme/CastleGraphics.cpp
     Source/UI/Components/CastleHeaderComponent.cpp
     Source/UI/Components/GrimoireComponent.cpp
@@ -90,7 +89,6 @@ target_link_libraries(HorrorCastle PRIVATE
     juce::juce_recommended_lto_flags
 )
 
-# Headless signature regression check / offline WAV renderer.
 juce_add_console_app(HorrorCastleSignatureCheck
     PRODUCT_NAME "Horror Castle Signature Check"
 )
@@ -105,6 +103,7 @@ target_sources(HorrorCastleSignatureCheck PRIVATE
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/WraithBreathEngine.cpp
+    Source/HorrorCastle/ReliquaryEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -123,8 +122,6 @@ target_link_libraries(HorrorCastleSignatureCheck PRIVATE
     juce::juce_recommended_config_flags
 )
 
-# Focused v1.3 DSP gate. This is intentionally small and fast so every PR can
-# directly measure the new Living Engines without rendering the whole plugin.
 juce_add_console_app(HorrorCastleLivingEnginesCheck
     PRODUCT_NAME "Horror Castle Living Engines Check"
 )
@@ -134,6 +131,7 @@ target_sources(HorrorCastleLivingEnginesCheck PRIVATE
     Source/HorrorCastle/RitualFMEngine.cpp
     Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/WraithBreathEngine.cpp
+    Source/HorrorCastle/ReliquaryEngine.cpp
 )
 target_compile_definitions(HorrorCastleLivingEnginesCheck PRIVATE
     JUCE_WEB_BROWSER=0
