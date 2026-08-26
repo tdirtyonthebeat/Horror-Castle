@@ -10,6 +10,8 @@
 #include "SpectralCorpseEngine.h"
 #include "RitualFMEngine.h"
 #include "BoneResonatorEngine.h"
+#include "WraithBreathEngine.h"
+#include "ReliquaryEngine.h"
 #include <array>
 #include <cmath>
 #include <atomic>
@@ -25,24 +27,20 @@ private:
  struct Voice {
   bool active=false,releasing=false; int note=0; float pitchNote=60.f; float velocity=0;
   float pa=0,pb=0,pc=0;
-  float cfa=0,cfb=0,tfa=0,tfb=0; // independent CRYPT/TOWER filter memories
+  float cfa=0,cfb=0,tfa=0,tfb=0;
   float cryptBody=0,towerBody=0;
   float cryptWander=0,towerWander=0;
   float cryptDetune=0,towerDetune=0;
-  // Chamber-identity oscillators are intentionally independent of the three
-  // user generator phases. DREAD can grow a true subharmonic underbody while
-  // AETHER excites stable inharmonic bell ratios above the played pitch.
   float cryptSubPhase=0, cryptAbyssPhase=0;
   float towerBellPhaseA=0, towerBellPhaseB=0;
-  // v0.14 chamber engines use independent auxiliary clocks per generator slot.
-  // They are deliberately separate so inharmonic/subharmonic engines do not
-  // inherit phase discontinuities from the shared fundamental oscillators.
   std::array<float,3> cryptAux1{}, cryptAux2{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
   std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
+  std::array<WraithBreathEngine::VoiceState,3> cryptWraith{};
   std::array<float,3> towerAux1{}, towerAux2{};
   std::array<RitualFMEngine::VoiceState,3> towerRitualFM{};
+  std::array<ReliquaryEngine::VoiceState,3> towerReliquary{};
   float polyPressure=0.f;
   Env amp,iron;
  };
@@ -59,6 +57,8 @@ private:
  SpectralCorpseEngine spectralCorpse;
  RitualFMEngine ritualFM;
  BoneResonatorEngine boneResonator;
+ WraithBreathEngine wraith;
+ ReliquaryEngine reliquary;
  float corpsePosition=.34f, corpseRot=.22f, corpseFormant=0.f, corpseInharmonic=.08f;
  float modWheel=0.f, channelPressure=0.f, pitchBendSemitones=0.f;
  float globalGlide=0.f; int globalUnison=1; float lastPlayedNote=60.f;
