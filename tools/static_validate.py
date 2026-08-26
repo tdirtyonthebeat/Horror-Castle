@@ -1,20 +1,18 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import sys, re
+import sys
 root=Path(__file__).resolve().parents[1]
 fail=[]
 def require(cond,msg):
     if not cond: fail.append(msg)
-
 def text(path): return (root/path).read_text(errors='replace')
 cmake=text('CMakeLists.txt'); params=text('Source/HorrorCastle/CastleParameters.h'); curse=text('Source/HorrorCastle/CurseMatrix.h'); processor=text('Source/Core/HorrorCastleProcessor.cpp')
 engine_files=['Source/HorrorCastle/CastleEngineCore.cpp','Source/HorrorCastle/CastleEngineScene.cpp','Source/HorrorCastle/CastleEngineRender.cpp']
-engine='\n'.join(text(f) for f in engine_files)
+engine='\n'.join(text(f) for f in engine_files); header=text('Source/HorrorCastle/CastleEngine.h'); architecture=text('Source/HorrorCastle/HorrorCastleArchitecture.h')
 require('VERSION 1.3.0' in cmake and 'VERSION "1.3.0"' in cmake,'CMake version is not 1.3.0')
 for f in ['PossessionEngine.cpp','PossessionEngine.h','RitualsEngine.cpp','RitualsEngine.h','Grimoire.cpp','Grimoire.h','GraveChamber.cpp']:
     require((root/'Source/HorrorCastle'/f).exists(),f'missing {f}')
-for f in engine_files:
-    require((root/f).exists(),f'missing split engine module {f}')
+for f in engine_files: require((root/f).exists(),f'missing split engine module {f}')
 for pid in ['corpse.position','corpse.rot','corpse.formant','corpse.inharmonic','possession.bloodFeed','possession.aetherLeak','possession.soulExchange','possession.haunt','rituals.enabled','rituals.pattern','rituals.rate','rituals.bpm']:
     require(pid in params,f'missing parameter {pid}')
 require('Destinations = 22' in curse,'HEX 2.0 destination count is not 22')
@@ -22,10 +20,15 @@ require('busHex[19]' in engine and 'busHex[20]' in engine and 'busHex[21]' in en
 require('Grimoire::CurrentStateVersion' in processor,'versioned state marker missing')
 require('juce::Reverb' not in engine,'stock juce::Reverb returned to active engine')
 require('process(m, performanceMidi' in engine,'RITUALS MIDI path missing')
-for engine_name in ['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine']:
+for engine_name in ['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine']:
     require((root/'Source/HorrorCastle'/f'{engine_name}.cpp').exists(),f'missing {engine_name}.cpp')
 require('ritualFM.renderSample' in engine,'Ritual FM is not wired into the generator path')
-require('boneResonator.renderSample' in engine and 'cryptBone' in text('Source/HorrorCastle/CastleEngine.h'),'Bone Resonator 2.0 is not active in CRYPT Chamber III')
+require('boneResonator.renderSample' in engine and 'cryptBone' in header,'Bone Resonator 2.0 is not active in CRYPT Chamber III')
+require('wraith.renderSample' in engine and 'cryptWraith' in header,'Wraith is not active in CRYPT Chamber V')
+require('reliquary.renderSample' in engine and 'towerReliquary' in header,'Reliquary is not active in TOWER Chamber V')
+require('ChamberV' in architecture,'appended Chamber V generator identity is missing')
+require('"Wraith"' in params and '"Reliquary"' in params,'Chamber V parameter choices are not exposed')
+require('jlimit(0,12,v)' in text('Source/HorrorCastle/CastleEngineCore.cpp'),'generator loader does not accept appended index 12')
 require('isPitchWheel' in engine and 'getControllerNumber() == 1' in engine and 'isChannelPressure' in engine and 'isAftertouch' in engine,'expressive MIDI path is incomplete')
 require('Mod Wheel' in params and 'Aftertouch' in params,'HEX expressive sources are not exposed')
 require('spectralCorpse.renderSample' in engine,'CRYPT CORPSE is not wired to spectral resynthesis')
@@ -33,20 +36,18 @@ require('samplePosition <= n' in engine,'sample-accurate MIDI event dispatch mis
 require('modWheel, pressure' in engine,'HEX live expression values are not forwarded')
 require(all(f in cmake for f in ['CastleEngineCore.cpp','CastleEngineScene.cpp','CastleEngineRender.cpp']),'CMake is not using split Castle engine modules')
 require('Source/HorrorCastle/CastleEngine.cpp' not in cmake,'legacy monolithic CastleEngine.cpp is still compiled')
-require('WraithBreathEngine.cpp' in cmake,'Wraith acoustic-body engine is not compiled')
+require('WraithBreathEngine.cpp' in cmake and 'ReliquaryEngine.cpp' in cmake,'Chamber V engines are not compiled')
 require('HorrorCastleLivingEnginesCheck' in cmake and 'LivingEnginesCheck.cpp' in cmake,'focused Living Engines DSP gate is not wired')
 living=text('tools/LivingEnginesCheck.cpp')
-require(all(name in living for name in ['RitualFMEngine','BoneResonatorEngine','WraithBreathEngine']),'Living Engines gate does not cover all current engine families')
+require(all(name in living for name in ['RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine']),'Living Engines gate does not cover all current engine families')
 for f in ['Source/UI/Theme/CastleTheme.h','Source/UI/Theme/CastleGraphics.cpp','Source/UI/Components/CastleHeaderComponent.cpp','Source/UI/Components/GrimoireComponent.cpp','Assets/castle_reference.png','Assets/StoneShadow/backdrop.png','Assets/StoneShadow/header.png','Assets/StoneShadow/crypt_frame.png','Assets/StoneShadow/tower_frame.png','Assets/StoneShadow/center_spine.png','Assets/StoneShadow/ritual_grave_frame.png','Assets/StoneShadow/hex_frame.png','Assets/StoneShadow/inspector_frame.png','Assets/StoneShadow/undercroft.png']:
     require((root/f).exists(),f'missing v1.1 UI asset/module {f}')
 require('getFactorySpells' in text('Source/HorrorCastle/Grimoire.cpp'),'expanded Grimoire metadata missing')
 require(text('Source/HorrorCastle/Grimoire.cpp').count('S{') >= 40,'Grimoire has fewer than 40 factory spell metadata entries')
 editor=text('Source/HorrorCastle/HorrorCastleEditor.cpp')
-for pid in ['corpse.position','corpse.rot','corpse.formant','corpse.inharmonic']:
-    require(pid in editor,f'Spectral Corpse control {pid} is not exposed in editor')
+for pid in ['corpse.position','corpse.rot','corpse.formant','corpse.inharmonic']: require(pid in editor,f'Spectral Corpse control {pid} is not exposed in editor')
 require('UNDERCROFT' in editor and 'CORPSE ALTAR' in editor,'Stone & Shadow secondary-room UI is missing')
 require('center_spine_png' in editor,'Stone & Shadow cathedral spine asset is not wired')
-# Release source must not contain copied historical project names.
 source_hits=[]
 for f in (root/'Source').rglob('*'):
     if f.is_file() and f.suffix in {'.h','.cpp','.c','.mm'}:
@@ -54,7 +55,6 @@ for f in (root/'Source').rglob('*'):
         for forbidden in ('odin','surge','galdr','wavewarden'):
             if forbidden in low: source_hits.append(f'{f.relative_to(root)}:{forbidden}')
 require(not source_hits,'reference-project names found in release Source/: '+', '.join(source_hits))
-# Shell syntax is checked by the launcher itself on macOS; ensure file is present/executable-ish.
 require((root/'build_horror_castle.command').exists(),'missing build launcher')
 if fail:
     print('HORROR CASTLE STATIC VALIDATION FAILED')
@@ -68,6 +68,6 @@ print('PASS  sample-accurate MIDI dispatch')
 print('PASS  independent release Source/ naming scan')
 print('PASS  Stone & Shadow hybrid skin + 40-spell Grimoire + Spectral Corpse UI')
 print('PASS  Living Engines Ritual FM + expressive MIDI + one-click Grimoire')
-print('PASS  Living Engines focused DSP gate + active Bone Resonator 2.0')
-print('PASS  split Castle engine core / scene / render architecture')
-print('PASS  Wraith coupled membrane / air-column prototype')
+print('PASS  active Bone Resonator 2.0 + split Castle architecture')
+print('PASS  Chamber V appended without shifting legacy generator indices')
+print('PASS  CRYPT Wraith + TOWER Reliquary acoustic bodies')
