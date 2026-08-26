@@ -24,7 +24,9 @@ namespace HorrorCastle
         Velocity,
         Key,
         Random,
-        Pulse
+        Pulse,
+        ModWheel,
+        Aftertouch
     };
 
     enum class ModDestination
