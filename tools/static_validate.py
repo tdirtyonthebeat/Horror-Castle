@@ -22,9 +22,8 @@ require('busHex[19]' in engine and 'busHex[20]' in engine and 'busHex[21]' in en
 require('Grimoire::CurrentStateVersion' in processor,'versioned state marker missing')
 require('juce::Reverb' not in engine,'stock juce::Reverb returned to active engine')
 require('process(m, performanceMidi' in engine,'RITUALS MIDI path missing')
-require((root/'Source/HorrorCastle/SpectralCorpseEngine.cpp').exists(),'missing SpectralCorpseEngine.cpp')
-require((root/'Source/HorrorCastle/RitualFMEngine.cpp').exists(),'missing RitualFMEngine.cpp')
-require((root/'Source/HorrorCastle/BoneResonatorEngine.cpp').exists(),'missing BoneResonatorEngine.cpp')
+for engine_name in ['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine']:
+    require((root/'Source/HorrorCastle'/f'{engine_name}.cpp').exists(),f'missing {engine_name}.cpp')
 require('ritualFM.renderSample' in engine,'Ritual FM is not wired into the generator path')
 require('boneResonator.renderSample' in engine and 'cryptBone' in text('Source/HorrorCastle/CastleEngine.h'),'Bone Resonator 2.0 is not active in CRYPT Chamber III')
 require('isPitchWheel' in engine and 'getControllerNumber() == 1' in engine and 'isChannelPressure' in engine and 'isAftertouch' in engine,'expressive MIDI path is incomplete')
@@ -34,9 +33,10 @@ require('samplePosition <= n' in engine,'sample-accurate MIDI event dispatch mis
 require('modWheel, pressure' in engine,'HEX live expression values are not forwarded')
 require(all(f in cmake for f in ['CastleEngineCore.cpp','CastleEngineScene.cpp','CastleEngineRender.cpp']),'CMake is not using split Castle engine modules')
 require('Source/HorrorCastle/CastleEngine.cpp' not in cmake,'legacy monolithic CastleEngine.cpp is still compiled')
+require('WraithBreathEngine.cpp' in cmake,'Wraith acoustic-body engine is not compiled')
 require('HorrorCastleLivingEnginesCheck' in cmake and 'LivingEnginesCheck.cpp' in cmake,'focused Living Engines DSP gate is not wired')
 living=text('tools/LivingEnginesCheck.cpp')
-require('BoneResonatorEngine' in living and 'RitualFMEngine' in living,'Living Engines gate does not cover both new engine families')
+require(all(name in living for name in ['RitualFMEngine','BoneResonatorEngine','WraithBreathEngine']),'Living Engines gate does not cover all current engine families')
 for f in ['Source/UI/Theme/CastleTheme.h','Source/UI/Theme/CastleGraphics.cpp','Source/UI/Components/CastleHeaderComponent.cpp','Source/UI/Components/GrimoireComponent.cpp','Assets/castle_reference.png','Assets/StoneShadow/backdrop.png','Assets/StoneShadow/header.png','Assets/StoneShadow/crypt_frame.png','Assets/StoneShadow/tower_frame.png','Assets/StoneShadow/center_spine.png','Assets/StoneShadow/ritual_grave_frame.png','Assets/StoneShadow/hex_frame.png','Assets/StoneShadow/inspector_frame.png','Assets/StoneShadow/undercroft.png']:
     require((root/f).exists(),f'missing v1.1 UI asset/module {f}')
 require('getFactorySpells' in text('Source/HorrorCastle/Grimoire.cpp'),'expanded Grimoire metadata missing')
@@ -70,3 +70,4 @@ print('PASS  Stone & Shadow hybrid skin + 40-spell Grimoire + Spectral Corpse UI
 print('PASS  Living Engines Ritual FM + expressive MIDI + one-click Grimoire')
 print('PASS  Living Engines focused DSP gate + active Bone Resonator 2.0')
 print('PASS  split Castle engine core / scene / render architecture')
+print('PASS  Wraith coupled membrane / air-column prototype')
