@@ -14,6 +14,8 @@
 #include "ReliquaryEngine.h"
 #include "CoffinBodyEngine.h"
 #include "ChoirBodyEngine.h"
+#include "MarrowEngine.h"
+#include "OrreryEngine.h"
 #include <array>
 #include <cmath>
 #include <atomic>
@@ -41,10 +43,12 @@ private:
   std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
   std::array<WraithBreathEngine::VoiceState,3> cryptWraith{};
   std::array<CoffinBodyEngine::VoiceState,3> cryptCoffin{};
+  std::array<MarrowEngine::VoiceState,3> cryptMarrow{};
   std::array<float,3> towerAux1{}, towerAux2{};
   std::array<RitualFMEngine::VoiceState,3> towerRitualFM{};
   std::array<ReliquaryEngine::VoiceState,3> towerReliquary{};
   std::array<ChoirBodyEngine::VoiceState,3> towerChoir{};
+  std::array<OrreryEngine::VoiceState,3> towerOrrery{};
   float polyPressure=0.f;
   Env amp,iron;
  };
@@ -65,6 +69,8 @@ private:
  ReliquaryEngine reliquary;
  CoffinBodyEngine coffin;
  ChoirBodyEngine choir;
+ MarrowEngine marrow;
+ OrreryEngine orrery;
  float corpsePosition=.34f, corpseRot=.22f, corpseFormant=0.f, corpseInharmonic=.08f;
  float modWheel=0.f, channelPressure=0.f, pitchBendSemitones=0.f;
  float globalGlide=0.f; int globalUnison=1; float lastPlayedNote=60.f;

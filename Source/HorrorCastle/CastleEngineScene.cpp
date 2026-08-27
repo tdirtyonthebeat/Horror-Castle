@@ -30,6 +30,7 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberIV:{const float slow=advanceAux(aux1,freq*.75f),fast=advanceAux(aux2,freq*1.25f,.5f),ring=base*slow,turn=std::sin(T*phase+fast*(1.0f+sh*4.5f));return std::tanh((ring*(.75f-.30f*sh)+turn*(.28f+.58f*sh))*(1.35f+character));}
                 case GeneratorType::ChamberV:return wraith.renderSample(v.cryptWraith[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return coffin.renderSample(v.cryptCoffin[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberVII:return marrow.renderSample(v.cryptMarrow[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 default:break;
             }
         }else{
@@ -40,6 +41,7 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberIV:{const float prismA=advanceAux(aux1,freq*2.071f,.21f),prismB=advanceAux(aux2,freq*5.173f,.93f),refraction=base*(.36f-.18f*sh)+prismA*(.34f+.28f*sh)+prismB*(.18f+.24f*character);return std::sin(refraction*juce::MathConstants<float>::pi*(1.15f+sh*1.85f));}
                 case GeneratorType::ChamberV:return reliquary.renderSample(v.towerReliquary[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return choir.renderSample(v.towerChoir[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberVII:return orrery.renderSample(v.towerOrrery[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 default:break;
             }
         }

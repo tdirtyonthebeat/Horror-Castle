@@ -20,17 +20,23 @@ require('busHex[19]' in engine and 'busHex[20]' in engine and 'busHex[21]' in en
 require('Grimoire::CurrentStateVersion' in processor,'versioned state marker missing')
 require('juce::Reverb' not in engine,'stock juce::Reverb returned to active engine')
 require('process(m, performanceMidi' in engine,'RITUALS MIDI path missing')
-for engine_name in ['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine','CoffinBodyEngine','ChoirBodyEngine','MarrowEngine','OrreryEngine']:
+
+engine_names=['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine','CoffinBodyEngine','ChoirBodyEngine','MarrowEngine','OrreryEngine','MirrorSpectralEngine','AbyssWaveguideEngine']
+for engine_name in engine_names:
     require((root/'Source/HorrorCastle'/f'{engine_name}.cpp').exists(),f'missing {engine_name}.cpp')
+
 require('ritualFM.renderSample' in engine,'Ritual FM is not wired into the generator path')
 require('boneResonator.renderSample' in engine and 'cryptBone' in header,'Bone Resonator 2.0 is not active in CRYPT Chamber III')
 require('wraith.renderSample' in engine and 'cryptWraith' in header,'Wraith is not active in CRYPT Chamber V')
 require('reliquary.renderSample' in engine and 'towerReliquary' in header,'Reliquary is not active in TOWER Chamber V')
 require('coffin.renderSample' in engine and 'cryptCoffin' in header,'COFFIN is not active in CRYPT Chamber VI')
 require('choir.renderSample' in engine and 'towerChoir' in header,'CHOIR is not active in TOWER Chamber VI')
-require('ChamberV' in architecture and 'ChamberVI' in architecture,'appended Chamber V/VI generator identities are missing')
-require(all(x in params for x in ['"Wraith"','"Reliquary"','"Coffin"','"Choir"']),'Chamber V/VI parameter choices are not exposed')
-require('jlimit(0,13,v)' in text('Source/HorrorCastle/CastleEngineCore.cpp'),'generator loader does not accept appended index 13')
+require('marrow.renderSample' in engine and 'cryptMarrow' in header,'MARROW is not active in CRYPT Chamber VII')
+require('orrery.renderSample' in engine and 'towerOrrery' in header,'ORRERY is not active in TOWER Chamber VII')
+require(all(x in architecture for x in ['ChamberV','ChamberVI','ChamberVII']),'appended Chamber V/VI/VII generator identities are missing')
+require(all(x in params for x in ['"Wraith"','"Reliquary"','"Coffin"','"Choir"','"Marrow"','"Orrery"']),'bestiary parameter choices are not exposed')
+require('jlimit(0,14,v)' in text('Source/HorrorCastle/CastleEngineCore.cpp'),'generator loader does not accept appended index 14')
+
 require('isPitchWheel' in engine and 'getControllerNumber() == 1' in engine and 'isChannelPressure' in engine and 'isAftertouch' in engine,'expressive MIDI path is incomplete')
 require('Mod Wheel' in params and 'Aftertouch' in params,'HEX expressive sources are not exposed')
 require('spectralCorpse.renderSample' in engine,'CRYPT CORPSE is not wired to spectral resynthesis')
@@ -38,13 +44,16 @@ require('samplePosition <= n' in engine,'sample-accurate MIDI event dispatch mis
 require('modWheel, pressure' in engine,'HEX live expression values are not forwarded')
 require(all(f in cmake for f in ['CastleEngineCore.cpp','CastleEngineScene.cpp','CastleEngineRender.cpp']),'CMake is not using split Castle engine modules')
 require('Source/HorrorCastle/CastleEngine.cpp' not in cmake,'legacy monolithic CastleEngine.cpp is still compiled')
-require(all(x in cmake for x in ['WraithBreathEngine.cpp','ReliquaryEngine.cpp','CoffinBodyEngine.cpp','ChoirBodyEngine.cpp','MarrowEngine.cpp','OrreryEngine.cpp']),'bestiary engines are not all compiled')
-require(all(x in cmake for x in ['HorrorCastleCoffinCheck','HorrorCastleChoirCheck','HorrorCastleBestiaryCheck']),'bestiary regression targets are incomplete')
-require((root/'tools/CoffinCheck.cpp').exists() and (root/'tools/ChoirCheck.cpp').exists() and (root/'tools/BestiaryCheck.cpp').exists(),'missing bestiary regression checks')
-coffin=text('tools/CoffinCheck.cpp'); choir=text('tools/ChoirCheck.cpp'); bestiary=text('tools/BestiaryCheck.cpp')
+require(all((name + '.cpp') in cmake for name in engine_names[3:]),'bestiary engines are not all compiled')
+require(all(x in cmake for x in ['HorrorCastleCoffinCheck','HorrorCastleChoirCheck','HorrorCastleBestiaryCheck','HorrorCastleMirrorAbyssCheck']),'bestiary regression targets are incomplete')
+require((root/'tools/CoffinCheck.cpp').exists() and (root/'tools/ChoirCheck.cpp').exists() and (root/'tools/BestiaryCheck.cpp').exists() and (root/'tools/MirrorAbyssCheck.cpp').exists(),'missing bestiary regression checks')
+
+coffin=text('tools/CoffinCheck.cpp'); choir=text('tools/ChoirCheck.cpp'); bestiary=text('tools/BestiaryCheck.cpp'); mirror_abyss=text('tools/MirrorAbyssCheck.cpp')
 require(all(term in coffin for term in ['COFFIN LID','COFFIN DREAD','COFFIN expression','extreme coupling']),'COFFIN gate incomplete')
 require(all(term in choir for term in ['CHOIR VOWEL','CHOIR AETHER','CHOIR expression','extreme coupling']),'CHOIR gate incomplete')
 require(all(term in bestiary for term in ['MARROW viscosity','MARROW DREAD','stick-slip','ORRERY orbit','ORRERY AETHER']),'MARROW/ORRERY gate incomplete')
+require(all(term in mirror_abyss for term in ['MIRROR REFLECTION','MIRROR AETHER','ABYSS DEPTH','ABYSS DREAD']),'MIRROR/ABYSS gate incomplete')
+
 for f in ['Source/UI/Theme/CastleTheme.h','Source/UI/Theme/CastleGraphics.cpp','Source/UI/Components/CastleHeaderComponent.cpp','Source/UI/Components/GrimoireComponent.cpp','Assets/castle_reference.png','Assets/StoneShadow/backdrop.png','Assets/StoneShadow/header.png','Assets/StoneShadow/crypt_frame.png','Assets/StoneShadow/tower_frame.png','Assets/StoneShadow/center_spine.png','Assets/StoneShadow/ritual_grave_frame.png','Assets/StoneShadow/hex_frame.png','Assets/StoneShadow/inspector_frame.png','Assets/StoneShadow/undercroft.png']:
     require((root/f).exists(),f'missing v1.1 UI asset/module {f}')
 require('getFactorySpells' in text('Source/HorrorCastle/Grimoire.cpp'),'expanded Grimoire metadata missing')
@@ -75,5 +84,6 @@ print('PASS  Stone & Shadow hybrid skin + 40-spell Grimoire + Spectral Corpse UI
 print('PASS  Living Engines Ritual FM + expressive MIDI + one-click Grimoire')
 print('PASS  Chamber V CRYPT Wraith + TOWER Reliquary')
 print('PASS  Chamber VI CRYPT Coffin + TOWER Choir')
-print('PASS  Chamber VII research prototypes MARROW + ORRERY')
-print('PASS  generator indices 0..12 preserved; Chamber VI appended at 13')
+print('PASS  Chamber VII CRYPT Marrow + TOWER Orrery')
+print('PASS  Chamber VIII research prototypes MIRROR + ABYSS')
+print('PASS  generator indices 0..13 preserved; Chamber VII appended at 14')

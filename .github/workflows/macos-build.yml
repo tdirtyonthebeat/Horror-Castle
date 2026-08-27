@@ -29,7 +29,6 @@ jobs:
 
       - name: Build Living Engines check
         run: cmake --build build --config Release --target HorrorCastleLivingEnginesCheck -j 3
-
       - name: Run Living Engines check
         run: |
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleLivingEnginesCheck' -o -name 'Horror Castle Living Engines Check' \) -print -quit)"
@@ -38,7 +37,6 @@ jobs:
 
       - name: Build COFFIN check
         run: cmake --build build --config Release --target HorrorCastleCoffinCheck -j 3
-
       - name: Run COFFIN check
         run: |
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleCoffinCheck' -o -name 'Horror Castle Coffin Check' \) -print -quit)"
@@ -47,7 +45,6 @@ jobs:
 
       - name: Build CHOIR check
         run: cmake --build build --config Release --target HorrorCastleChoirCheck -j 3
-
       - name: Run CHOIR check
         run: |
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleChoirCheck' -o -name 'Horror Castle Choir Check' \) -print -quit)"
@@ -56,9 +53,16 @@ jobs:
 
       - name: Build Bestiary check
         run: cmake --build build --config Release --target HorrorCastleBestiaryCheck -j 3
-
       - name: Run Bestiary check
         run: |
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleBestiaryCheck' -o -name 'Horror Castle Bestiary Check' \) -print -quit)"
+          test -n "$CHECKER"
+          "$CHECKER"
+
+      - name: Build MIRROR / ABYSS check
+        run: cmake --build build --config Release --target HorrorCastleMirrorAbyssCheck -j 3
+      - name: Run MIRROR / ABYSS check
+        run: |
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleMirrorAbyssCheck' -o -name 'Horror Castle Mirror Abyss Check' \) -print -quit)"
           test -n "$CHECKER"
           "$CHECKER"
