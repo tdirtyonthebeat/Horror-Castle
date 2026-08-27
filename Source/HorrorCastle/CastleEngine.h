@@ -12,6 +12,8 @@
 #include "BoneResonatorEngine.h"
 #include "WraithBreathEngine.h"
 #include "ReliquaryEngine.h"
+#include "CoffinBodyEngine.h"
+#include "ChoirBodyEngine.h"
 #include <array>
 #include <cmath>
 #include <atomic>
@@ -38,9 +40,11 @@ private:
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
   std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
   std::array<WraithBreathEngine::VoiceState,3> cryptWraith{};
+  std::array<CoffinBodyEngine::VoiceState,3> cryptCoffin{};
   std::array<float,3> towerAux1{}, towerAux2{};
   std::array<RitualFMEngine::VoiceState,3> towerRitualFM{};
   std::array<ReliquaryEngine::VoiceState,3> towerReliquary{};
+  std::array<ChoirBodyEngine::VoiceState,3> towerChoir{};
   float polyPressure=0.f;
   Env amp,iron;
  };
@@ -59,6 +63,8 @@ private:
  BoneResonatorEngine boneResonator;
  WraithBreathEngine wraith;
  ReliquaryEngine reliquary;
+ CoffinBodyEngine coffin;
+ ChoirBodyEngine choir;
  float corpsePosition=.34f, corpseRot=.22f, corpseFormant=0.f, corpseInharmonic=.08f;
  float modWheel=0.f, channelPressure=0.f, pitchBendSemitones=0.f;
  float globalGlide=0.f; int globalUnison=1; float lastPlayedNote=60.f;
