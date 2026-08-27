@@ -59,6 +59,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/WraithBreathEngine.cpp
     Source/HorrorCastle/ReliquaryEngine.cpp
+    Source/HorrorCastle/CoffinBodyEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -104,6 +105,7 @@ target_sources(HorrorCastleSignatureCheck PRIVATE
     Source/HorrorCastle/BoneResonatorEngine.cpp
     Source/HorrorCastle/WraithBreathEngine.cpp
     Source/HorrorCastle/ReliquaryEngine.cpp
+    Source/HorrorCastle/CoffinBodyEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp
     Source/HorrorCastle/GraveChamber.cpp
     Source/HorrorCastle/PossessionEngine.cpp
@@ -138,6 +140,24 @@ target_compile_definitions(HorrorCastleLivingEnginesCheck PRIVATE
     JUCE_USE_CURL=0
 )
 target_link_libraries(HorrorCastleLivingEnginesCheck PRIVATE
+    juce::juce_audio_utils
+    juce::juce_dsp
+    juce::juce_recommended_config_flags
+)
+
+juce_add_console_app(HorrorCastleCoffinCheck
+    PRODUCT_NAME "Horror Castle Coffin Check"
+)
+juce_generate_juce_header(HorrorCastleCoffinCheck)
+target_sources(HorrorCastleCoffinCheck PRIVATE
+    tools/CoffinCheck.cpp
+    Source/HorrorCastle/CoffinBodyEngine.cpp
+)
+target_compile_definitions(HorrorCastleCoffinCheck PRIVATE
+    JUCE_WEB_BROWSER=0
+    JUCE_USE_CURL=0
+)
+target_link_libraries(HorrorCastleCoffinCheck PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
     juce::juce_recommended_config_flags
