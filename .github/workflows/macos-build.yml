@@ -52,3 +52,16 @@ jobs:
           fi
           echo "Running: $CHECKER"
           "$CHECKER"
+
+      - name: Build CHOIR check
+        run: cmake --build build --config Release --target HorrorCastleChoirCheck -j 3
+
+      - name: Run CHOIR check
+        run: |
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleChoirCheck' -o -name 'Horror Castle Choir Check' \) -print -quit)"
+          if [ -z "$CHECKER" ]; then
+            echo "CHOIR checker executable was not found"
+            exit 1
+          fi
+          echo "Running: $CHECKER"
+          "$CHECKER"
