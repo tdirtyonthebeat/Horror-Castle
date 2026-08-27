@@ -39,3 +39,16 @@ jobs:
           fi
           echo "Running: $CHECKER"
           "$CHECKER"
+
+      - name: Build COFFIN check
+        run: cmake --build build --config Release --target HorrorCastleCoffinCheck -j 3
+
+      - name: Run COFFIN check
+        run: |
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleCoffinCheck' -o -name 'Horror Castle Coffin Check' \) -print -quit)"
+          if [ -z "$CHECKER" ]; then
+            echo "COFFIN checker executable was not found"
+            exit 1
+          fi
+          echo "Running: $CHECKER"
+          "$CHECKER"
