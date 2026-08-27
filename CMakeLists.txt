@@ -19,7 +19,7 @@ target_sources(HorrorCastle PRIVATE
     Source/HorrorCastle/HorrorCastleArchitecture.cpp Source/HorrorCastle/CastleEngineCore.cpp Source/HorrorCastle/CastleEngineScene.cpp Source/HorrorCastle/CastleEngineRender.cpp
     Source/HorrorCastle/SpectralCorpseEngine.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp
     Source/HorrorCastle/CoffinBodyEngine.cpp Source/HorrorCastle/ChoirBodyEngine.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp
-    Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp
+    Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp
     Source/HorrorCastle/RitualEngine.cpp Source/HorrorCastle/GraveChamber.cpp Source/HorrorCastle/PossessionEngine.cpp Source/HorrorCastle/RitualsEngine.cpp Source/HorrorCastle/Grimoire.cpp Source/HorrorCastle/CurseMatrix.cpp Source/HorrorCastle/CurseChain.cpp Source/HorrorCastle/HorrorCastleEditor.cpp
     Source/UI/Theme/CastleGraphics.cpp Source/UI/Components/CastleHeaderComponent.cpp Source/UI/Components/GrimoireComponent.cpp Source/UI/HexMatrixComponent.cpp Source/UI/CurseInspectorComponent.cpp)
 
@@ -28,7 +28,7 @@ target_link_libraries(HorrorCastle PRIVATE HorrorCastleAssets juce::juce_audio_u
 
 juce_add_console_app(HorrorCastleSignatureCheck PRODUCT_NAME "Horror Castle Signature Check")
 juce_generate_juce_header(HorrorCastleSignatureCheck)
-target_sources(HorrorCastleSignatureCheck PRIVATE tools/SignatureCheck.cpp Source/HorrorCastle/HorrorCastleArchitecture.cpp Source/HorrorCastle/CastleEngineCore.cpp Source/HorrorCastle/CastleEngineScene.cpp Source/HorrorCastle/CastleEngineRender.cpp Source/HorrorCastle/SpectralCorpseEngine.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp Source/HorrorCastle/CoffinBodyEngine.cpp Source/HorrorCastle/ChoirBodyEngine.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp Source/HorrorCastle/RitualEngine.cpp Source/HorrorCastle/GraveChamber.cpp Source/HorrorCastle/PossessionEngine.cpp Source/HorrorCastle/RitualsEngine.cpp Source/HorrorCastle/Grimoire.cpp Source/HorrorCastle/CurseMatrix.cpp Source/HorrorCastle/CurseChain.cpp)
+target_sources(HorrorCastleSignatureCheck PRIVATE tools/SignatureCheck.cpp Source/HorrorCastle/HorrorCastleArchitecture.cpp Source/HorrorCastle/CastleEngineCore.cpp Source/HorrorCastle/CastleEngineScene.cpp Source/HorrorCastle/CastleEngineRender.cpp Source/HorrorCastle/SpectralCorpseEngine.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp Source/HorrorCastle/CoffinBodyEngine.cpp Source/HorrorCastle/ChoirBodyEngine.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp Source/HorrorCastle/RitualEngine.cpp Source/HorrorCastle/GraveChamber.cpp Source/HorrorCastle/PossessionEngine.cpp Source/HorrorCastle/RitualsEngine.cpp Source/HorrorCastle/Grimoire.cpp Source/HorrorCastle/CurseMatrix.cpp Source/HorrorCastle/CurseChain.cpp)
 target_compile_definitions(HorrorCastleSignatureCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(HorrorCastleSignatureCheck PRIVATE juce::juce_audio_utils juce::juce_dsp juce::juce_recommended_config_flags)
 
@@ -67,3 +67,9 @@ juce_generate_juce_header(HorrorCastleElectromagneticCheck)
 target_sources(HorrorCastleElectromagneticCheck PRIVATE tools/ElectromagneticCheck.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp)
 target_compile_definitions(HorrorCastleElectromagneticCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 target_link_libraries(HorrorCastleElectromagneticCheck PRIVATE juce::juce_audio_utils juce::juce_dsp juce::juce_recommended_config_flags)
+
+juce_add_console_app(HorrorCastleFluidCheck PRODUCT_NAME "Horror Castle Fluid Check")
+juce_generate_juce_header(HorrorCastleFluidCheck)
+target_sources(HorrorCastleFluidCheck PRIVATE tools/FluidCheck.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp)
+target_compile_definitions(HorrorCastleFluidCheck PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+target_link_libraries(HorrorCastleFluidCheck PRIVATE juce::juce_audio_utils juce::juce_dsp juce::juce_recommended_config_flags)

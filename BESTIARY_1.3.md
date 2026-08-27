@@ -44,7 +44,67 @@ Acoustic rules:
 5. Expression changes recursive phase coupling rather than merely output level.
 6. Reflected and original relationships morph continuously; there is no fixed wavetable or algorithm table.
 
-MIRROR and ABYSS are compiled with the real plugin and SignatureCheck, but they are not assigned generator index 15 until their dedicated macOS numerical gate passes.
+MIRROR and ABYSS are compiled with the real plugin and SignatureCheck, but remain unassigned to a public generator index until promoted.
+
+## Chamber IX research prototypes
+
+### POLTERGEIST — CRYPT candidate
+
+POLTERGEIST models four resonant charged plates whose electrostatic field changes their mechanical relationships.
+
+Acoustic rules:
+
+1. Plate charges accumulate and leak continuously rather than acting as static modulation values.
+2. Like charges repel and opposite charges attract, perturbing plate stress and resonant frequency.
+3. CHARGE changes stored electrostatic energy and therefore interaction force.
+4. DREAD increases field persistence and the likelihood of bounded discharge events.
+5. Expression changes charging rate and discharge regime, not post-output amplitude.
+6. Arc impulses and plate displacement are hard-bounded before feedback.
+
+### AURORA — TOWER candidate
+
+AURORA models charged resonant rings inside a shared electrostatic field.
+
+Acoustic rules:
+
+1. Five rings carry slowly redistributing charge.
+2. FIELD controls electrostatic bending of the rings' frequency relationships.
+3. AETHER changes redistribution rate, field motion, and cross-ring participation.
+4. Expression changes field participation continuously rather than gating a separate oscillator.
+5. The shared field stores slow state so repeated notes do not behave as fixed additive spectra.
+6. Field and ring states are numerically bounded before feedback.
+
+The electromagnetic pair passed the macOS plugin build and its dedicated regression gate before the next family was started.
+
+## Chamber X research prototypes
+
+### VORTEX — CRYPT candidate
+
+VORTEX is a chaotic pressure-and-vortex network inspired by unstable cavity flow and vortex shedding.
+
+Acoustic rules:
+
+1. Four coupled fluid cells store pressure, flow velocity, and signed vortex strength.
+2. TURBULENCE increases nonlinear coupling between local flow, neighbor pressure differences, and vortex shedding.
+3. Each cell sheds an aeroacoustic tone whose frequency is continuously perturbed by its own vortex state.
+4. DREAD increases fluid memory and cavity persistence, allowing pressure to accumulate toward collapse thresholds.
+5. Crossing a pressure threshold creates bounded stochastic collapse bursts instead of unbounded feedback.
+6. Expression changes forcing pressure and therefore the actual flow regime.
+
+### SIREN — TOWER candidate
+
+SIREN is a bounded jet/edge-tone aeroacoustic model rather than filtered noise.
+
+Acoustic rules:
+
+1. Four air jets are driven from a shared virtual plenum.
+2. APERTURE changes jet speed and the edge operating point together, shifting both tone and nonlinear edge response.
+3. Each jet stores displacement and edge memory, giving the flow a stateful oscillation rather than a fixed waveform.
+4. AETHER changes slow plenum-field coupling and how strongly the jets participate in a shared flow field.
+5. Expression changes breath pressure, which changes jet displacement and edge switching behavior.
+6. Jet, field, and output states are explicitly bounded at extreme settings.
+
+VORTEX and SIREN are compiled with the real plugin and SignatureCheck and have a dedicated fluid regression target, but they are not assigned a generator index while they remain research prototypes.
 
 ## Regression policy
 

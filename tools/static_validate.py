@@ -21,7 +21,7 @@ require('Grimoire::CurrentStateVersion' in processor,'versioned state marker mis
 require('juce::Reverb' not in engine,'stock juce::Reverb returned to active engine')
 require('process(m, performanceMidi' in engine,'RITUALS MIDI path missing')
 
-engine_names=['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine','CoffinBodyEngine','ChoirBodyEngine','MarrowEngine','OrreryEngine','MirrorSpectralEngine','AbyssWaveguideEngine','PoltergeistEngine','AuroraEngine']
+engine_names=['SpectralCorpseEngine','RitualFMEngine','BoneResonatorEngine','WraithBreathEngine','ReliquaryEngine','CoffinBodyEngine','ChoirBodyEngine','MarrowEngine','OrreryEngine','MirrorSpectralEngine','AbyssWaveguideEngine','PoltergeistEngine','AuroraEngine','VortexEngine','SirenEngine']
 for engine_name in engine_names:
     require((root/'Source/HorrorCastle'/f'{engine_name}.cpp').exists(),f'missing {engine_name}.cpp')
 
@@ -45,15 +45,16 @@ require('modWheel, pressure' in engine,'HEX live expression values are not forwa
 require(all(f in cmake for f in ['CastleEngineCore.cpp','CastleEngineScene.cpp','CastleEngineRender.cpp']),'CMake is not using split Castle engine modules')
 require('Source/HorrorCastle/CastleEngine.cpp' not in cmake,'legacy monolithic CastleEngine.cpp is still compiled')
 require(all((name + '.cpp') in cmake for name in engine_names[3:]),'bestiary engines are not all compiled')
-require(all(x in cmake for x in ['HorrorCastleCoffinCheck','HorrorCastleChoirCheck','HorrorCastleBestiaryCheck','HorrorCastleMirrorAbyssCheck','HorrorCastleElectromagneticCheck']),'bestiary regression targets are incomplete')
-require((root/'tools/CoffinCheck.cpp').exists() and (root/'tools/ChoirCheck.cpp').exists() and (root/'tools/BestiaryCheck.cpp').exists() and (root/'tools/MirrorAbyssCheck.cpp').exists() and (root/'tools/ElectromagneticCheck.cpp').exists(),'missing bestiary regression checks')
+require(all(x in cmake for x in ['HorrorCastleCoffinCheck','HorrorCastleChoirCheck','HorrorCastleBestiaryCheck','HorrorCastleMirrorAbyssCheck','HorrorCastleElectromagneticCheck','HorrorCastleFluidCheck']),'bestiary regression targets are incomplete')
+require(all((root/'tools'/f).exists() for f in ['CoffinCheck.cpp','ChoirCheck.cpp','BestiaryCheck.cpp','MirrorAbyssCheck.cpp','ElectromagneticCheck.cpp','FluidCheck.cpp']),'missing bestiary regression checks')
 
-coffin=text('tools/CoffinCheck.cpp'); choir=text('tools/ChoirCheck.cpp'); bestiary=text('tools/BestiaryCheck.cpp'); mirror_abyss=text('tools/MirrorAbyssCheck.cpp'); electromagnetic=text('tools/ElectromagneticCheck.cpp')
+coffin=text('tools/CoffinCheck.cpp'); choir=text('tools/ChoirCheck.cpp'); bestiary=text('tools/BestiaryCheck.cpp'); mirror_abyss=text('tools/MirrorAbyssCheck.cpp'); electromagnetic=text('tools/ElectromagneticCheck.cpp'); fluid=text('tools/FluidCheck.cpp')
 require(all(term in coffin for term in ['COFFIN LID','COFFIN DREAD','COFFIN expression','extreme coupling']),'COFFIN gate incomplete')
 require(all(term in choir for term in ['CHOIR VOWEL','CHOIR AETHER','CHOIR expression','extreme coupling']),'CHOIR gate incomplete')
 require(all(term in bestiary for term in ['MARROW viscosity','MARROW DREAD','stick-slip','ORRERY orbit','ORRERY AETHER']),'MARROW/ORRERY gate incomplete')
 require(all(term in mirror_abyss for term in ['MIRROR REFLECTION','MIRROR AETHER','ABYSS DEPTH','ABYSS DREAD']),'MIRROR/ABYSS gate incomplete')
 require(all(term in electromagnetic for term in ['POLTERGEIST CHARGE','POLTERGEIST DREAD','AURORA FIELD','AURORA AETHER']),'electromagnetic gate incomplete')
+require(all(term in fluid for term in ['VORTEX TURBULENCE','VORTEX DREAD','VORTEX expression','SIREN APERTURE','SIREN AETHER','SIREN expression']),'fluid gate incomplete')
 
 for f in ['Source/UI/Theme/CastleTheme.h','Source/UI/Theme/CastleGraphics.cpp','Source/UI/Components/CastleHeaderComponent.cpp','Source/UI/Components/GrimoireComponent.cpp','Assets/castle_reference.png','Assets/StoneShadow/backdrop.png','Assets/StoneShadow/header.png','Assets/StoneShadow/crypt_frame.png','Assets/StoneShadow/tower_frame.png','Assets/StoneShadow/center_spine.png','Assets/StoneShadow/ritual_grave_frame.png','Assets/StoneShadow/hex_frame.png','Assets/StoneShadow/inspector_frame.png','Assets/StoneShadow/undercroft.png']:
     require((root/f).exists(),f'missing v1.1 UI asset/module {f}')
@@ -88,4 +89,5 @@ print('PASS  Chamber VI CRYPT Coffin + TOWER Choir')
 print('PASS  Chamber VII CRYPT Marrow + TOWER Orrery')
 print('PASS  Chamber VIII research prototypes MIRROR + ABYSS')
 print('PASS  Chamber IX research prototypes POLTERGEIST + AURORA')
+print('PASS  Chamber X research prototypes VORTEX + SIREN')
 print('PASS  generator indices 0..13 preserved; Chamber VII appended at 14')
