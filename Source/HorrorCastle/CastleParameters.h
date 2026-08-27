@@ -19,20 +19,20 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     const char* scenes[] = {"crypt", "tower"};
     const char* genNames[] = {"Generator I", "Generator II", "Generator III"};
     for (auto* s : scenes) {
+        const bool sceneIsCrypt = juce::String(s) == "crypt";
         for (int g = 0; g < 3; ++g) {
             auto p = [&](const char* c) { return id(s, g + 1, c); };
-            const bool isCrypt = juce::String(s) == "crypt";
-            const int defaultType = (g == 0) ? 8 : (g == 1 ? 10 : (isCrypt ? 9 : 11));
-            if (isCrypt)
+            const int defaultType = (g == 0) ? 8 : (g == 1 ? 10 : (sceneIsCrypt ? 9 : 11));
+            if (sceneIsCrypt)
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                           {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Undercrypt", "Corpse", "Bone Resonator", "Rotator", "Wraith", "Coffin", "Marrow"}, defaultType);
             else
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                           {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Bell Glass", "Spectral Spire", "Astral FM", "Prism", "Reliquary", "Choir", "Orrery"}, defaultType);
-            const float defaultLevel = isCrypt ? (g == 0 ? .62f : (g == 1 ? .26f : .16f)) : (g == 0 ? .58f : (g == 1 ? .28f : .20f));
+            const float defaultLevel = sceneIsCrypt ? (g == 0 ? .62f : (g == 1 ? .26f : .16f)) : (g == 0 ? .58f : (g == 1 ? .28f : .20f));
             addFloat(p("level"), juce::String(s) + " " + genNames[g] + " Level", 0.f, 1.f, defaultLevel);
             addFloat(p("pan"), juce::String(s) + " " + genNames[g] + " Pan", -1.f, 1.f, 0.f);
-            const float defaultTune = (g == 0) ? 0.f : (isCrypt ? (g == 1 ? -12.f : -24.f) : (g == 1 ? 7.f : 12.f));
+            const float defaultTune = (g == 0) ? 0.f : (sceneIsCrypt ? (g == 1 ? -12.f : -24.f) : (g == 1 ? 7.f : 12.f));
             addFloat(p("tune"), juce::String(s) + " " + genNames[g] + " Tune", -24.f, 24.f, defaultTune);
             addFloat(p("shape"), juce::String(s) + " " + genNames[g] + " Shape", 0.f, 1.f, .35f);
             addFloat(p("spread"), juce::String(s) + " " + genNames[g] + " Spread", 0.f, 1.f, 0.f);
@@ -42,7 +42,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         addFloat(noise(s, "level"), juce::String(s) + " Noise Level", 0.f, 1.f, .08f);
         for (int f = 0; f < 2; ++f) {
             auto p = [&](const char* c) { return fid(s, f + 1, c); };
-            const bool cryptFilter = juce::String(s) == "crypt";
+            const bool cryptFilter = sceneIsCrypt;
             const int defaultFilterType = cryptFilter ? 0 : (f == 0 ? 1 : 0);
             addChoice(p("type"), juce::String(s) + " Filter " + juce::String(f + 1) + " Type", {"Low Pass", "High Pass", "Band Pass", "Notch", "Comb", "Formant", "Diode", "K35", "Shaper"}, defaultFilterType);
             const float defaultCutoff = cryptFilter ? (f == 0 ? .16f : .23f) : (f == 0 ? .065f : .40f);
@@ -56,7 +56,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         addChoice(route(s), juce::String(s) + " Filter Routing", {"Serial", "Parallel", "Split", "Crossfeed"}, 0);
         addFloat(scene(s, "master"), juce::String(s) + " Master", 0.f, 1.f, .8f);
         addFloat(scene(s, "balance"), juce::String(s) + " Balance", -1.f, 1.f, 0.f);
-        addFloat(scene(s, "character"), juce::String(s) + " Character", 0.f, 1.f, isCrypt ? .72f : .70f);
+        addFloat(scene(s, "character"), juce::String(s) + " Character", 0.f, 1.f, sceneIsCrypt ? .72f : .70f);
         addBool(scene(s, "crossfm"), juce::String(s) + " Cross FM", false);
         addBool(scene(s, "crossring"), juce::String(s) + " Cross Ring", false);
     }

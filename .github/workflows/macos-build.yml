@@ -66,3 +66,11 @@ jobs:
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleMirrorAbyssCheck' -o -name 'Horror Castle Mirror Abyss Check' \) -print -quit)"
           test -n "$CHECKER"
           "$CHECKER"
+
+      - name: Build electromagnetic check
+        run: cmake --build build --config Release --target HorrorCastleElectromagneticCheck -j 3
+      - name: Run electromagnetic check
+        run: |
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleElectromagneticCheck' -o -name 'Horror Castle Electromagnetic Check' \) -print -quit)"
+          test -n "$CHECKER"
+          "$CHECKER"
