@@ -30,9 +30,11 @@ namespace horrorcastle {
 class CastleEngine {
 public:
  static constexpr int MaxVoices=32;
+ enum EcologyMeter : int { VortexEvent=0, SirenPressure, PoltergeistInstability, AuroraField, EcologyMeterCount };
  CastleEngine(); void prepare(double,int); void reset(); void setParameters(const juce::AudioProcessorValueTreeState&); void render(juce::AudioBuffer<float>&,juce::MidiBuffer&);
  float getHexLaneActivity(int index) const noexcept { return (index >= 0 && index < CurseMatrix::Lanes) ? hexLaneTelemetry[(size_t)index].load(std::memory_order_relaxed) : 0.f; }
  float getHexDestinationValue(int index) const noexcept { return (index >= 0 && index < CurseMatrix::Destinations) ? hexDestinationTelemetry[(size_t)index].load(std::memory_order_relaxed) : 0.f; }
+ float getEcologyMeter(int index) const noexcept { return (index>=0&&index<EcologyMeterCount)?ecologyTelemetry[(size_t)index].load(std::memory_order_relaxed):0.f; }
 private:
  enum CreatureEndpoint : std::uint8_t { VortexCreature=0, SirenCreature=1, PoltergeistCreature=2, AuroraCreature=3 };
  struct Env { enum Stage{Off,Attack,Decay,Sustain,Release}; Stage stage=Off; float value=0; float attack=.008f,decay=.35f,sustain=.72f,release=.25f; void on(){stage=Attack;} void off(){stage=Release;} float next(double sr){ if(stage==Attack){value+=1.f/(attack*sr);if(value>=1){value=1;stage=Decay;}} else if(stage==Decay){value+=(sustain-value)/(decay*sr);if(std::abs(value-sustain)<1e-4f){value=sustain;stage=Sustain;}} else if(stage==Release){value-=value/(release*sr);if(value<1e-5f){value=0;stage=Off;}} return value;} };
@@ -73,6 +75,7 @@ private:
  RitualEngine ritual; RitualEngine::Parameters ritualParams{};
  std::array<std::atomic<float>, CurseMatrix::Lanes> hexLaneTelemetry{};
  std::array<std::atomic<float>, CurseMatrix::Destinations> hexDestinationTelemetry{};
+ std::array<std::atomic<float>, EcologyMeterCount> ecologyTelemetry{};
  juce::dsp::DelayLine<float> delay { 48000 };
  float delayMix=.18f; float delayFeedback=.28f; float delayTimeSamples=13230.f;
  GraveChamber grave; float graveTone=.32f;
