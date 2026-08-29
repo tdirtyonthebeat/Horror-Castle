@@ -24,13 +24,16 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
         const float pressure=juce::jlimit(0.f,1.f,std::max(channelPressure,v.polyPressure)); const float expression=juce::jlimit(0.f,1.f,v.velocity*.22f+modWheel*.43f+pressure*.35f);
         if(isCrypt){
             switch(gen.type){
-                case GeneratorType::ChamberI:{const float sub=advanceAux(aux1,freq*.5f),abyss=advanceAux(aux2,freq*.25f,.23f),wound=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.9f):0.f;return std::tanh((base*.18f+sub*.68f+abyss*.36f+wound*.10f)*(1.20f+character*1.55f));}
+                case GeneratorType::ChamberI:{const float sub=advanceAux(aux1,freq*.5f),abyssTone=advanceAux(aux2,freq*.25f,.23f),wound=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.9f):0.f;return std::tanh((base*.18f+sub*.68f+abyssTone*.36f+wound*.10f)*(1.20f+character*1.55f));}
                 case GeneratorType::ChamberII:{const float position=juce::jlimit(0.f,1.f,corpsePosition*.46f+sh*.54f),rot=juce::jlimit(0.f,1.f,corpseRot+character*.36f);return spectralCorpse.renderSample(v.cryptCorpse[(size_t)slot],freq,position,rot,corpseFormant,corpseInharmonic,sr);}
                 case GeneratorType::ChamberIII:return boneResonator.renderSample(v.cryptBone[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberIV:{const float slow=advanceAux(aux1,freq*.75f),fast=advanceAux(aux2,freq*1.25f,.5f),ring=base*slow,turn=std::sin(T*phase+fast*(1.0f+sh*4.5f));return std::tanh((ring*(.75f-.30f*sh)+turn*(.28f+.58f*sh))*(1.35f+character));}
                 case GeneratorType::ChamberV:return wraith.renderSample(v.cryptWraith[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return coffin.renderSample(v.cryptCoffin[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVII:return marrow.renderSample(v.cryptMarrow[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberVIII:return abyss.renderSample(v.cryptAbyss[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberIX:{auto& st=v.cryptPoltergeist[(size_t)slot];const float y=poltergeist.renderSample(st,freq,sh,character,expression,v.velocity,sr);v.ecologySnapshot[PoltergeistCreature]=PoltergeistEngine::stateBus(st);return y;}
+                case GeneratorType::ChamberX:{auto& st=v.cryptVortex[(size_t)slot];const float y=vortex.renderSample(st,freq,sh,character,expression,v.velocity,sr);v.ecologySnapshot[VortexCreature]=VortexEngine::stateBus(st);return y;}
                 default:break;
             }
         }else{
@@ -42,6 +45,9 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberV:return reliquary.renderSample(v.towerReliquary[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return choir.renderSample(v.towerChoir[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVII:return orrery.renderSample(v.towerOrrery[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberVIII:return mirror.renderSample(v.towerMirror[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
+                case GeneratorType::ChamberIX:{auto& st=v.towerAurora[(size_t)slot];const float ext=v.ecologyInbox[AuroraCreature].get(CreatureStateBus::Signal::Field);const float y=aurora.renderSample(st,freq,sh,character,expression,v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);v.ecologySnapshot[AuroraCreature]=AuroraEngine::stateBus(st);return y;}
+                case GeneratorType::ChamberX:{auto& st=v.towerSiren[(size_t)slot];const float ext=v.ecologyInbox[SirenCreature].get(CreatureStateBus::Signal::Pressure);const float y=siren.renderSample(st,freq,sh,character,expression,v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);v.ecologySnapshot[SirenCreature]=SirenEngine::stateBus(st);return y;}
                 default:break;
             }
         }
@@ -54,7 +60,7 @@ const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/1
 if(g[0].enabled)x+=signatureOsc(0,g[0],v.pa,shapeA,fA)*g[0].level;if(g[1].enabled)x+=signatureOsc(1,g[1],v.pb,shapeB,fB)*g[1].level;if(g[2].enabled)x+=signatureOsc(2,g[2],v.pc,shapeC,fC)*g[2].level;x*=.42f;if(s.voice.noise.enabled)x+=rnd()*s.voice.noise.level*.2f;
 FilterCell fa=s.voice.filters[0],fb=s.voice.filters[1];fa.cutoff=juce::jlimit(.002f,.48f,fa.cutoff+sceneCut*.20f);fb.cutoff=juce::jlimit(.002f,.48f,fb.cutoff+sceneCut*.16f);fa.drive=juce::jlimit(0.f,1.f,fa.drive+sceneDrive);fb.drive=juce::jlimit(0.f,1.f,fb.drive+sceneDrive);
 float& za=isCrypt?v.cfa:v.tfa;float& zb=isCrypt?v.cfb:v.tfb;float a=filter(x,za,fa,mod),b=filter(x,zb,fb,mod*.7f);if(s.voice.filterRoute==Route::Parallel)x=.5f*(a+b);else if(s.voice.filterRoute==Route::Crossfeed)x=.65f*a+.35f*b;else if(s.voice.filterRoute==Route::Split)x=.78f*a+.22f*b;else x=filter(a,zb,fb,mod*.7f);
-float stereoSide=0.f;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyss=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyss*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
+float stereoSide=0.f;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
 else{const float bellA=(f*2.41421356f<sr*.46f)?std::sin(T*v.towerBellPhaseA):0.f,bellB=(f*3.73205081f<sr*.46f)?std::sin(T*v.towerBellPhaseB+.37f):0.f,celestial=bellA*(.08f+.30f*character)+bellB*(.03f+.17f*character),alpha=1.f-std::exp(-T*2500.f/(float)sr);v.towerBody+=alpha*(x-v.towerBody);const float air=x-v.towerBody;x=std::tanh(x*(.78f-.20f*character)+air*(.14f+.48f*character)+celestial);stereoSide=(bellA-bellB)*(.015f+.11f*character);}
 const float chamberEnvelope=isCrypt?std::pow(juce::jlimit(0.f,1.f,v.amp.value),.78f):v.amp.value*(1.f+.22f*character*v.iron.value);x*=chamberEnvelope*v.velocity*s.voice.master;
 float levelSum=0.f,weightedPan=0.f,spread=0.f;for(const auto& gen:g){if(gen.enabled){levelSum+=gen.level;weightedPan+=gen.pan*gen.level;spread+=gen.spread*gen.level;}}if(levelSum>1.0e-5f){weightedPan/=levelSum;spread/=levelSum;}float pan=juce::jlimit(-1.f,1.f,weightedPan+s.sceneBalance);const float unisonWidth=(globalUnison-1)/7.f;stereoSide+=x*spread*(.06f+.18f*unisonWidth)*std::sin(T*wander+.7f);const float left=x*(.5f-.5f*pan)+stereoSide*(.5f+.25f*character),right=x*(.5f+.5f*pan)-stereoSide*(.5f+.25f*character);l+=left;r+=right;}
