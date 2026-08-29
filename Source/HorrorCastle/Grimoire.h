@@ -6,7 +6,7 @@ namespace horrorcastle {
 
 class Grimoire {
 public:
-    static constexpr int CurrentStateVersion = 120;
+    static constexpr int CurrentStateVersion = 130;
     struct SpellInfo {
         juce::String name, subtitle, description, category, tags;
         int sigil = 0;
