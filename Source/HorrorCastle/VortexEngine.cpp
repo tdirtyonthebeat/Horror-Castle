@@ -12,7 +12,7 @@ float VortexEngine::renderSample(VoiceState& s,float fundamentalHz,float turbule
     const float drive=(0.12f+0.88f*expression)*(0.25f+0.75f*velocity);
     const float hiss=noise(s.rng)*(0.004f+0.055f*turbulence)*drive;
     const float memory=0.965f+0.030f*dread;
-    float sum=0.0f, pressureMean=0.0f;
+    float sum=0.0f, pressureMean=0.0f, motionMean=0.0f, vortexMean=0.0f;
     constexpr std::array<float,Cells> ratios{0.47f,0.73f,1.11f,1.61f};
     for(int i=0;i<Cells;++i){
         auto& c=s.cells[(size_t)i];
@@ -28,14 +28,27 @@ float VortexEngine::renderSample(VoiceState& s,float fundamentalHz,float turbule
         const float swirl=std::sin(juce::MathConstants<float>::twoPi*c.phase + c.pressure*(1.0f+3.5f*dread));
         sum += swirl*(0.10f+0.22f*std::abs(c.vortex)+0.10f*turbulence) + c.flow*0.05f;
         pressureMean += c.pressure;
+        motionMean += std::abs(c.flow);
+        vortexMean += std::abs(c.vortex);
     }
     pressureMean*=0.25f;
+    motionMean*=0.25f;
+    vortexMean*=0.25f;
     const float collapseDrive=std::max(0.0f,std::abs(pressureMean)-(.58f-.24f*dread));
     s.collapse=0.985f*s.collapse+collapseDrive*(0.08f+0.22f*turbulence);
     s.cavity=std::tanh(s.cavity*(0.975f+0.018f*dread)+pressureMean*(0.018f+0.045f*dread)-s.collapse*pressureMean*0.16f);
     const float burst=noise(s.rng)*s.collapse*(0.02f+0.08f*dread);
     const float out=sum*0.42f+s.cavity*(0.20f+0.32f*dread)+burst;
     if(!std::isfinite(out)){ s=VoiceState{}; return 0.0f; }
+
+    auto& bus=s.creatureState;
+    bus.set(CreatureStateBus::Signal::Energy, juce::jlimit(0.0f,1.0f,std::abs(out)*0.75f+motionMean*0.25f));
+    bus.set(CreatureStateBus::Signal::Pressure, std::abs(pressureMean));
+    bus.set(CreatureStateBus::Signal::Motion, motionMean);
+    bus.set(CreatureStateBus::Signal::Instability, juce::jlimit(0.0f,1.0f,vortexMean*0.55f+turbulence*0.30f+s.collapse*0.50f));
+    bus.set(CreatureStateBus::Signal::Event, juce::jlimit(0.0f,1.0f,collapseDrive*3.5f+s.collapse*0.45f));
+    bus.set(CreatureStateBus::Signal::Field, juce::jlimit(0.0f,1.0f,std::abs(s.cavity)));
+
     return juce::jlimit(-1.0f,1.0f,std::tanh(out*1.55f));
 }
 
