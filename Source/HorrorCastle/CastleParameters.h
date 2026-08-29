@@ -25,10 +25,10 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
             const int defaultType = (g == 0) ? 8 : (g == 1 ? 10 : (sceneIsCrypt ? 9 : 11));
             if (sceneIsCrypt)
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
-                          {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Undercrypt", "Corpse", "Bone Resonator", "Rotator", "Wraith", "Coffin", "Marrow"}, defaultType);
+                          {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Undercrypt", "Corpse", "Bone Resonator", "Rotator", "Wraith", "Coffin", "Marrow", "Abyss", "Poltergeist", "Vortex"}, defaultType);
             else
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
-                          {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Bell Glass", "Spectral Spire", "Astral FM", "Prism", "Reliquary", "Choir", "Orrery"}, defaultType);
+                          {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Bell Glass", "Spectral Spire", "Astral FM", "Prism", "Reliquary", "Choir", "Orrery", "Mirror", "Aurora", "Siren"}, defaultType);
             const float defaultLevel = sceneIsCrypt ? (g == 0 ? .62f : (g == 1 ? .26f : .16f)) : (g == 0 ? .58f : (g == 1 ? .28f : .20f));
             addFloat(p("level"), juce::String(s) + " " + genNames[g] + " Level", 0.f, 1.f, defaultLevel);
             addFloat(p("pan"), juce::String(s) + " " + genNames[g] + " Pan", -1.f, 1.f, 0.f);
@@ -67,6 +67,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     addFloat("global.glide", "Castle Glide", 0.f, 1.f, 0.f); addFloat("global.unison", "Castle Unison", 1.f, 8.f, 1.f); addFloat("global.hex", "Hex Amount", 0.f, 1.f, 1.f);
     addFloat("corpse.position", "Corpse Position", 0.f, 1.f, .34f); addFloat("corpse.rot", "Corpse Rot", 0.f, 1.f, .22f); addFloat("corpse.formant", "Corpse Formant", -1.f, 1.f, 0.f); addFloat("corpse.inharmonic", "Corpse Inharmonicity", 0.f, 1.f, .08f);
     addFloat("possession.bloodFeed", "Blood Feed", 0.f, 1.f, 0.f); addFloat("possession.aetherLeak", "Aether Leak", 0.f, 1.f, 0.f); addFloat("possession.soulExchange", "Soul Exchange", 0.f, 1.f, 0.f); addFloat("possession.haunt", "Haunt", 0.f, 1.f, 0.f);
+    addBool("ecology.enabled", "Nervous System", false); addFloat("ecology.depth", "Ecology Depth", 0.f, 1.f, .65f);
     addBool("rituals.enabled", "Rituals Enabled", false); addChoice("rituals.pattern", "Rituals Pattern", {"Procession", "Ascension", "Descent", "Circle", "Seance", "Possession", "Sacrifice", "Chaos"}, 0); addChoice("rituals.rate", "Rituals Rate", {"1/4", "1/8", "1/16", "1/32"}, 2); addFloat("rituals.bpm", "Rituals BPM", 30.f, 240.f, 120.f); addFloat("rituals.gate", "Rituals Gate", .05f, .98f, .62f); addFloat("rituals.probability", "Rituals Probability", 0.f, 1.f, 1.f); addFloat("rituals.swing", "Rituals Swing", 0.f, 1.f, 0.f); addFloat("rituals.octaves", "Rituals Octaves", 1.f, 4.f, 1.f);
 
     const char* curseSources[] = {"Off", "Blood", "Wraith", "Velocity", "Key", "Random", "Pulse", "Mod Wheel", "Aftertouch"};
