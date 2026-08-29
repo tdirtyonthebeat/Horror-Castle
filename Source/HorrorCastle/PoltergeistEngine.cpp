@@ -30,6 +30,7 @@ float PoltergeistEngine::renderSample(VoiceState& s,
 
     float meanCharge = 0.0f;
     float maxPotential = 0.0f;
+    float motionMean = 0.0f;
     for (int i = 0; i < Plates; ++i)
     {
         auto& p = s.plates[(size_t)i];
@@ -39,14 +40,17 @@ float PoltergeistEngine::renderSample(VoiceState& s,
         p.charge *= (1.0f - leak);
         p.charge = juce::jlimit(-1.0f, 1.0f, p.charge);
         meanCharge += p.charge;
+        motionMean += std::abs(target - p.charge);
 
         const auto& n = s.plates[(size_t)((i + 1) % Plates)];
         maxPotential = std::max(maxPotential, std::abs(p.charge - n.charge));
     }
     meanCharge /= (float)Plates;
+    motionMean /= (float)Plates;
     s.field += (0.002f + 0.012f * charge) * (meanCharge - s.field);
 
     const float dischargeThreshold = 0.78f - 0.28f * dread - 0.10f * expression;
+    const float priorArc = s.arcEnvelope;
     if (maxPotential > dischargeThreshold)
     {
         const float excess = maxPotential - dischargeThreshold;
@@ -82,7 +86,21 @@ float PoltergeistEngine::renderSample(VoiceState& s,
     const float stressed = body * (0.20f + 0.16f * charge)
                          + arc
                          + std::tanh(body * s.field * (0.08f + 0.30f * dread));
-    return juce::jlimit(-1.0f, 1.0f, std::tanh(stressed * 1.35f));
+    const float out = juce::jlimit(-1.0f, 1.0f, std::tanh(stressed * 1.35f));
+
+    auto& bus = s.creatureState;
+    const float chargeEnergy = juce::jlimit(0.0f, 1.0f, maxPotential * 0.72f + std::abs(s.field) * 0.28f);
+    const float instability = juce::jlimit(0.0f, 1.0f, std::max(0.0f, maxPotential - dischargeThreshold) * 2.2f + s.arcEnvelope * 0.45f);
+    const float arcEvent = juce::jlimit(0.0f, 1.0f, std::max(0.0f, s.arcEnvelope - priorArc) * 8.0f);
+    bus.set(CreatureStateBus::Signal::Energy, chargeEnergy);
+    bus.set(CreatureStateBus::Signal::Pressure, maxPotential * 0.5f);
+    bus.set(CreatureStateBus::Signal::Motion, motionMean * 2.0f);
+    bus.set(CreatureStateBus::Signal::Instability, instability);
+    bus.set(CreatureStateBus::Signal::Event, arcEvent);
+    bus.set(CreatureStateBus::Signal::Field, std::abs(s.field) + chargeEnergy * 0.25f);
+
+    if (!std::isfinite(out)) { s = VoiceState{}; return 0.0f; }
+    return out;
 }
 
 } // namespace horrorcastle
