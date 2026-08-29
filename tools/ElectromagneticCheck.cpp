@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "../Source/HorrorCastle/PoltergeistEngine.h"
 #include "../Source/HorrorCastle/AuroraEngine.h"
+#include "../Source/HorrorCastle/CreatureRoutingMatrix.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -85,6 +86,52 @@ int main()
     auto faint = renderAurora(0.65f, 0.60f, 0.05f);
     auto expressive = renderAurora(0.65f, 0.60f, 1.00f);
     check(diff(faint, expressive) > 0.08f, "AURORA expression changes charge redistribution");
+
+    horrorcastle::CreatureRoutingMatrix matrix;
+    horrorcastle::CreatureRoutingMatrix::Route unstable;
+    unstable.sourceCreature=0;
+    unstable.sourceSignal=horrorcastle::CreatureStateBus::Signal::Instability;
+    unstable.destinationCreature=1;
+    unstable.destinationSignal=horrorcastle::CreatureStateBus::Signal::Field;
+    unstable.amount=.62f;
+    unstable.smoothing=.18f;
+    unstable.enabled=true;
+    matrix.setRoute(0,unstable);
+    horrorcastle::CreatureRoutingMatrix::Route arc=unstable;
+    arc.sourceSignal=horrorcastle::CreatureStateBus::Signal::Event;
+    arc.amount=.78f;
+    arc.smoothing=1.0f;
+    matrix.setRoute(1,arc);
+
+    horrorcastle::CreatureRoutingMatrix::StateArray sources{}, inbox{};
+    PoltergeistEngine pEco;
+    AuroraEngine aEco;
+    PoltergeistEngine::VoiceState ps{};
+    AuroraEngine::VoiceState dry{}, wet{}, extreme{};
+    std::vector<float> dryOut, wetOut;
+    dryOut.reserve(samples); wetOut.reserve(samples);
+    float routedPeak=0.0f, eventPeak=0.0f; bool ecologyFinite=true;
+    for(int i=0;i<samples;++i)
+    {
+        pEco.renderSample(ps,82.41f,.98f,.98f,1.0f,.95f,sampleRate);
+        sources[0]=PoltergeistEngine::stateBus(ps);
+        eventPeak=std::max(eventPeak,sources[0].get(horrorcastle::CreatureStateBus::Signal::Event));
+        matrix.process(sources,inbox);
+        const float routedField=inbox[1].get(horrorcastle::CreatureStateBus::Signal::Field);
+        routedPeak=std::max(routedPeak,routedField);
+        const float yd=aEco.renderSample(dry,164.81f,.35f,.72f,.68f,.88f,sampleRate,0.0f,0.0f);
+        const float yw=aEco.renderSample(wet,164.81f,.35f,.72f,.68f,.88f,sampleRate,routedField,1.0f);
+        const float yx=aEco.renderSample(extreme,164.81f,1.0f,1.0f,1.0f,1.0f,sampleRate,1.0f,1.0f);
+        ecologyFinite &= std::isfinite(yd)&&std::isfinite(yw)&&std::isfinite(yx)&&std::abs(yx)<=1.001f;
+        dryOut.push_back(yd); wetOut.push_back(yw);
+    }
+
+    check(routedPeak>1.0e-4f,"Routing Matrix receives POLTERGEIST INSTABILITY / EVENT");
+    check(PoltergeistEngine::stateBus(ps).get(horrorcastle::CreatureStateBus::Signal::Instability)>0.0f,"POLTERGEIST publishes instability state");
+    check(eventPeak>=0.0f,"POLTERGEIST EVENT telemetry remains finite");
+    check(ecologyFinite,"POLTERGEIST -> AURORA ecology remains bounded");
+    check(diff(dryOut,wetOut)>0.02f,"Routing Matrix: POLTERGEIST disturbs AURORA FIELD audibly");
+    check(AuroraEngine::stateBus(wet).get(horrorcastle::CreatureStateBus::Signal::Field)>0.0f,"AURORA republishes disturbed field state");
 
     std::cout << (failures ? "\nHorror Castle Electromagnetic check FAILED.\n"
                            : "\nHorror Castle Electromagnetic check passed.\n");
