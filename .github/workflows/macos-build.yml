@@ -82,3 +82,11 @@ jobs:
           CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleFluidCheck' -o -name 'Horror Castle Fluid Check' \) -print -quit)"
           test -n "$CHECKER"
           "$CHECKER"
+
+      - name: Build Creature State Bus check
+        run: cmake --build build --config Release --target HorrorCastleCreatureStateBusCheck -j 3
+      - name: Run Creature State Bus check
+        run: |
+          CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleCreatureStateBusCheck' -o -name 'Horror Castle Creature State Bus Check' \) -print -quit)"
+          test -n "$CHECKER"
+          "$CHECKER"
