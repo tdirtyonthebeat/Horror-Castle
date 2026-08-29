@@ -18,6 +18,9 @@ jobs:
       - name: Static validation
         run: python3 tools/static_validate.py
 
+      - name: Nervous System validation
+        run: python3 tools/nervous_system_validate.py
+
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="$(uname -m)"
 
