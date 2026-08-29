@@ -1,6 +1,7 @@
 #include <JuceHeader.h>
 #include "../Source/HorrorCastle/VortexEngine.h"
 #include "../Source/HorrorCastle/SirenEngine.h"
+#include "../Source/HorrorCastle/CreatureRoutingMatrix.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
@@ -43,16 +44,33 @@ int main(){
     check(separation(sb.rms,se.rms,2.0e-4),"SIREN expression",sb.rms,se.rms);
     check(sx.finite&&sx.peak<=1.0001f,"SIREN bounded extreme coupling",sx.rms,sx.peak);
 
+    horrorcastle::CreatureRoutingMatrix wetMatrix, dryMatrix;
+    horrorcastle::CreatureRoutingMatrix::Route route;
+    route.sourceCreature=0;
+    route.sourceSignal=horrorcastle::CreatureStateBus::Signal::Event;
+    route.destinationCreature=1;
+    route.destinationSignal=horrorcastle::CreatureStateBus::Signal::Event;
+    route.amount=.85f;
+    route.enabled=true;
+    wetMatrix.setRoute(0,route);
+    route.enabled=false;
+    dryMatrix.setRoute(0,route);
+
+    horrorcastle::CreatureRoutingMatrix::StateArray sources{}, wetInbox{}, dryInbox{};
     horrorcastle::VortexEngine::VoiceState ecologyV{};
     horrorcastle::SirenEngine::VoiceState ecologyDry{}, ecologyWet{}, ecologyExtreme{};
     constexpr int N=48000;
     double drySS=0.0, wetSS=0.0, diffSS=0.0; float wetPeak=0.0f, eventPeak=0.0f; bool ecologyFinite=true;
     for(int i=0;i<N;++i){
         vortex.renderSample(ecologyV,82.41f,1.0f,1.0f,1.0f,1.0f,48000.0);
-        const float event=horrorcastle::VortexEngine::stateBus(ecologyV).get(horrorcastle::CreatureStateBus::Signal::Event);
-        eventPeak=std::max(eventPeak,event);
-        const float dry=siren.renderSample(ecologyDry,220.0f,.42f,.78f,.68f,.90f,48000.0,event,0.0f);
-        const float wet=siren.renderSample(ecologyWet,220.0f,.42f,.78f,.68f,.90f,48000.0,event,0.85f);
+        sources[0]=horrorcastle::VortexEngine::stateBus(ecologyV);
+        eventPeak=std::max(eventPeak,sources[0].get(horrorcastle::CreatureStateBus::Signal::Event));
+        wetMatrix.process(sources,wetInbox);
+        dryMatrix.process(sources,dryInbox);
+        const float wetEvent=wetInbox[1].get(horrorcastle::CreatureStateBus::Signal::Event);
+        const float dryEvent=dryInbox[1].get(horrorcastle::CreatureStateBus::Signal::Event);
+        const float dry=siren.renderSample(ecologyDry,220.0f,.42f,.78f,.68f,.90f,48000.0,dryEvent,1.0f);
+        const float wet=siren.renderSample(ecologyWet,220.0f,.42f,.78f,.68f,.90f,48000.0,wetEvent,1.0f);
         if(!std::isfinite(dry)||!std::isfinite(wet)){ ecologyFinite=false; continue; }
         drySS+=(double)dry*dry; wetSS+=(double)wet*wet; const double d=(double)wet-dry; diffSS+=d*d; wetPeak=std::max(wetPeak,std::abs(wet));
         const float extreme=siren.renderSample(ecologyExtreme,220.0f,1.0f,1.0f,1.0f,1.0f,48000.0,1.0f,1.0f);
@@ -61,8 +79,8 @@ int main(){
     const double dryRms=std::sqrt(drySS/N), wetRms=std::sqrt(wetSS/N), diffRms=std::sqrt(diffSS/N);
     check(eventPeak>1.0e-4f,"VORTEX publishes collapse EVENT",eventPeak,0.0);
     check(ecologyFinite&&wetPeak<=1.0001f,"Ecology route finite / bounded",wetRms,wetPeak);
-    check(diffRms>2.0e-4,"VORTEX EVENT -> SIREN plenum is audible",dryRms,wetRms);
-    check(std::abs(ecologyDry.ecologicalImpulse)<1.0e-7f,"Disabled ecology route remains disconnected",ecologyDry.ecologicalImpulse,0.0);
+    check(diffRms>2.0e-4,"Routing Matrix: VORTEX EVENT -> SIREN plenum is audible",dryRms,wetRms);
+    check(std::abs(ecologyDry.ecologicalImpulse)<1.0e-7f,"Disabled matrix route remains disconnected",ecologyDry.ecologicalImpulse,0.0);
     check(horrorcastle::SirenEngine::stateBus(ecologyWet).get(horrorcastle::CreatureStateBus::Signal::Pressure)>0.0f,"SIREN republishes disturbed physical state");
 
     return ok?0:1;
