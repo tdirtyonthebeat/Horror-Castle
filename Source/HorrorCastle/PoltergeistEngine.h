@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "CreatureStateBus.h"
 #include <array>
 #include <cstdint>
 
@@ -24,6 +25,7 @@ public:
         float field = 0.0f;
         float arcEnvelope = 0.0f;
         uint32_t rng = 0x504F4C54u;
+        CreatureStateBus::State creatureState{};
     };
 
     float renderSample(VoiceState& state,
@@ -33,6 +35,8 @@ public:
                        float expression,
                        float velocity,
                        double sampleRate) noexcept;
+
+    static const CreatureStateBus::State& stateBus(const VoiceState& state) noexcept { return state.creatureState; }
 };
 
 } // namespace horrorcastle
