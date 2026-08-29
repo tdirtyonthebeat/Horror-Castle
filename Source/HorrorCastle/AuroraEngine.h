@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "CreatureStateBus.h"
 #include <array>
 
 namespace horrorcastle {
@@ -23,6 +24,8 @@ public:
         std::array<RingState, Rings> rings{};
         float sharedField = 0.0f;
         float halo = 0.0f;
+        float ecologicalField = 0.0f;
+        CreatureStateBus::State creatureState{};
     };
 
     float renderSample(VoiceState& state,
@@ -31,7 +34,11 @@ public:
                        float aether,
                        float expression,
                        float velocity,
-                       double sampleRate) noexcept;
+                       double sampleRate,
+                       float externalField=0.0f,
+                       float fieldCoupling=0.0f) noexcept;
+
+    static const CreatureStateBus::State& stateBus(const VoiceState& state) noexcept { return state.creatureState; }
 };
 
 } // namespace horrorcastle
