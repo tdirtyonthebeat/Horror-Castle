@@ -106,6 +106,14 @@ Acoustic rules:
 
 VORTEX and SIREN are compiled with the real plugin and SignatureCheck and have a dedicated fluid regression target, but they are not assigned a generator index while they remain research prototypes.
 
+## The Nervous System — Creature State Bus
+
+Advanced species may publish normalized physical state through a shared abstraction boundary rather than exposing private DSP internals. The bus vocabulary is **ENERGY, PRESSURE, MOTION, INSTABILITY, EVENT, FIELD**. Continuous signals are bounded and may be smoothed; EVENT is intended for short bounded pulses.
+
+The first ecological route is **VORTEX collapse EVENT -> SIREN plenum disturbance**. VORTEX derives the event directly from its pressure/collapse simulation. SIREN consumes that event before jet-speed and edge-switching calculations, so the route alters the aeroacoustic operating regime instead of post-output amplitude. A zero route amount must leave the systems disconnected, and aggressive coupling must remain finite and bounded.
+
+This route is still research plumbing: it does not assign VORTEX or SIREN public generator indices and therefore does not change preset/state meanings.
+
 ## Regression policy
 
 A supernatural object cannot become public merely because it compiles. Its gate must demonstrate:
@@ -115,6 +123,12 @@ A supernatural object cannot become public merely because it compiles. Its gate 
 - material separation between its structural controls;
 - meaningful expression response;
 - preservation of earlier generator indices and state compatibility.
+
+Cross-creature ecology adds three additional requirements:
+
+- the producer must emit a measurable physical state from its real simulation;
+- disabling a route must make the coupling inert;
+- enabling a route must create a measurable behavioral/audio change without violating numerical bounds.
 
 ## Why GitHub may email failed runs during development
 
