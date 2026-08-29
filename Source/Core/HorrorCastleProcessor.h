@@ -44,6 +44,7 @@ public:
 
     float getHexLaneActivity(int index) const noexcept { return engine.getHexLaneActivity(index); }
     float getHexDestinationValue(int index) const noexcept { return engine.getHexDestinationValue(index); }
+    float getEcologyMeter(int index) const noexcept { return engine.getEcologyMeter(index); }
 
     juce::StringArray getFactoryPresetNames() const { return grimoire.getFactoryNames(); }
     std::vector<Grimoire::SpellInfo> getFactoryPresetSpells() const { return grimoire.getFactorySpells(); }
