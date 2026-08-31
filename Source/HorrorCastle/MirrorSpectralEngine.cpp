@@ -24,41 +24,59 @@ float MirrorSpectralEngine::renderSample(VoiceState& s,
     constexpr std::array<float, Rays> baseRatios { 1.0f, 1.497f, 2.071f, 2.731f, 3.887f, 5.173f, 7.391f };
     constexpr std::array<float, Rays> phaseSeeds { 0.03f, 0.19f, 0.37f, 0.52f, 0.68f, 0.81f, 0.94f };
 
-    s.precession = wrap01(s.precession + (0.018f + 0.115f * aether) / (float) sr);
-    const float pivot = 1.35f + 4.65f * reflection;
+    // Reflection bends the spectrum around a moving pivot. Aether controls how
+    // strongly the reflected rays recurse and smear into one another.
+    s.precession = wrap01(s.precession + (0.010f + 0.19f * aether * aether) / (float) sr);
+    const float pivot = 1.12f + 6.4f * reflection * reflection;
+    const float fracture = reflection * reflection * (0.25f + 0.75f * aether);
     float sum = 0.0f;
     float recursive = s.field;
 
     for (int i = 0; i < Rays; ++i)
     {
         const float original = baseRatios[(size_t) i];
-        const float reflected = (pivot * pivot) / juce::jmax(0.35f, original);
-        const float logRatio = (1.0f - reflection) * std::log(original)
-                             + reflection * std::log(reflected);
-        const float drift = 1.0f + (0.0007f + 0.0032f * aether)
-                                  * std::sin(T * (s.precession * (0.43f + 0.11f * (float) i)
+        const float reflected = (pivot * pivot) / juce::jmax(0.28f, original);
+        const float blend = std::pow(reflection, 0.72f + 0.08f * (float)i);
+        const float logRatio = (1.0f - blend) * std::log(original)
+                             + blend * std::log(reflected);
+        const float shard = 1.0f + fracture * 0.018f * ((i & 1) ? -1.0f : 1.0f) * (float)(i + 1);
+        const float drift = 1.0f + (0.0004f + 0.006f * aether)
+                                  * std::sin(T * (s.precession * (0.37f + 0.13f * (float) i)
                                                 + phaseSeeds[(size_t) i]));
-        const float frequency = fundamentalHz * std::exp(logRatio) * drift;
+        const float frequency = fundamentalHz * std::exp(logRatio) * drift * shard;
         if (frequency <= 0.0f || frequency >= sr * 0.46) continue;
 
         auto& ray = s.rays[(size_t) i];
         ray.phase = wrap01(ray.phase + frequency / (float) sr);
-        const float recursionDepth = (0.08f + 0.42f * aether) * (0.25f + 0.75f * expression);
-        const float phaseWarp = recursive * recursionDepth * (0.65f + 0.18f * (float) i);
-        const float y = std::sin(T * ray.phase + phaseWarp + T * phaseSeeds[(size_t) i] * reflection);
-        ray.memory += (0.006f + 0.022f * (1.0f - reflection)) * (y - ray.memory);
+        const float recursionDepth = (0.04f + 0.62f * aether * aether) * (0.22f + 0.78f * expression);
+        const float phaseWarp = recursive * recursionDepth * (0.52f + 0.23f * (float) i);
+        const float reflectedPhase = T * phaseSeeds[(size_t) i] * reflection * (1.0f + 0.35f * fracture);
+        const float y = std::sin(T * ray.phase + phaseWarp + reflectedPhase);
+        const float memoryRate = 0.003f + 0.031f * (1.0f - reflection) * (1.0f - 0.55f * aether);
+        ray.memory += memoryRate * (y - ray.memory);
 
         const float polarity = (i & 1) ? -1.0f : 1.0f;
         const float weight = polarity / std::sqrt((float) i + 1.0f);
-        const float contribution = y * weight + ray.memory * weight * (0.12f + 0.34f * reflection);
+        const float ghost = std::sin(T * ray.phase * 0.5f + recursive * (0.8f + 2.5f * reflection));
+        const float contribution = y * weight
+                                 + ray.memory * weight * (0.10f + 0.48f * reflection)
+                                 + ghost * weight * fracture * 0.12f;
         sum += contribution;
-        recursive = std::tanh(recursive * 0.72f + contribution * (0.18f + 0.24f * aether));
+        recursive = std::tanh(recursive * (0.58f + 0.18f * aether)
+                            + contribution * (0.14f + 0.36f * aether));
     }
 
-    s.field = std::tanh(sum * (0.23f + 0.10f * reflection) + recursive * (0.28f + 0.28f * aether));
-    const float dryAnchor = std::sin(T * s.rays[0].phase) * (0.10f + 0.12f * velocity);
-    const float body = dryAnchor + sum * (0.19f + 0.10f * velocity) + s.field * (0.36f + 0.30f * expression);
-    return juce::jlimit(-1.0f, 1.0f, std::tanh(body * 1.25f));
+    s.field = std::tanh(sum * (0.20f + 0.14f * reflection)
+                      + recursive * (0.22f + 0.40f * aether));
+    const float dryAnchor = std::sin(T * s.rays[0].phase) * (0.12f + 0.10f * velocity) * (1.0f - 0.55f * reflection);
+    const float shimmer = std::sin(T * s.precession + s.field * 3.0f) * s.field * (0.04f + 0.16f * aether);
+    const float body = dryAnchor
+                     + sum * (0.15f + 0.13f * velocity)
+                     + s.field * (0.30f + 0.40f * expression)
+                     + shimmer;
+    const float out = std::tanh(body * (1.05f + 0.55f * reflection));
+    if (!std::isfinite(out)) { s = VoiceState{}; return 0.0f; }
+    return juce::jlimit(-1.0f, 1.0f, out);
 }
 
 } // namespace horrorcastle
