@@ -25,7 +25,7 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         const bool sceneIsCrypt = juce::String(s) == "crypt";
         for (int g = 0; g < 3; ++g) {
             auto p = [&](const char* c) { return id(s, g + 1, c); };
-            const int defaultType = 15 + g; // ABYSS/MIRROR, POLTERGEIST/AURORA, VORTEX/SIREN.
+            const int defaultType = 15 + g;
             if (sceneIsCrypt)
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                           {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Undercrypt", "Corpse", "Bone Resonator", "Rotator", "Wraith", "Coffin", "Marrow", "Abyss", "Poltergeist", "Vortex"}, defaultType);
@@ -45,8 +45,6 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
         addFloat(noise(s, "level"), juce::String(s) + " Noise Level", 0.f, 1.f, .08f);
         for (int f = 0; f < 2; ++f) {
             auto p = [&](const char* c) { return fid(s, f + 1, c); };
-            // Keep INIT deliberately broad-band. Heavy filter coloration was masking
-            // the species differences before the player even touched a control.
             const int defaultFilterType = 0;
             addChoice(p("type"), juce::String(s) + " Filter " + juce::String(f + 1) + " Type", {"Low Pass", "High Pass", "Band Pass", "Notch", "Comb", "Formant", "Diode", "K35", "Shaper"}, defaultFilterType);
             const float defaultCutoff = (f == 0) ? .42f : .46f;
@@ -72,6 +70,28 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
     addFloat("corpse.position", "Corpse Position", 0.f, 1.f, .34f); addFloat("corpse.rot", "Corpse Rot", 0.f, 1.f, .22f); addFloat("corpse.formant", "Corpse Formant", -1.f, 1.f, 0.f); addFloat("corpse.inharmonic", "Corpse Inharmonicity", 0.f, 1.f, .08f);
     addFloat("possession.bloodFeed", "Blood Feed", 0.f, 1.f, 0.f); addFloat("possession.aetherLeak", "Aether Leak", 0.f, 1.f, 0.f); addFloat("possession.soulExchange", "Soul Exchange", 0.f, 1.f, 0.f); addFloat("possession.haunt", "Haunt", 0.f, 1.f, 0.f);
     addBool("ecology.enabled", "Nervous System", false); addFloat("ecology.depth", "Ecology Depth", 0.f, 1.f, .65f);
+
+    // Dedicated Living Engine physics. These are intentionally species-level rather
+    // than slot-level: multiple instances of the same creature inhabit one physical field.
+    addFloat("living.abyss.depth", "ABYSS Depth", 0.f, 1.f, .58f);
+    addFloat("living.abyss.pressure", "ABYSS Pressure", 0.f, 1.f, .46f);
+    addFloat("living.abyss.dread", "ABYSS Dread", 0.f, 1.f, .38f);
+    addFloat("living.poltergeist.charge", "POLTERGEIST Charge", 0.f, 1.f, .70f);
+    addFloat("living.poltergeist.arc", "POLTERGEIST Arc", 0.f, 1.f, .48f);
+    addFloat("living.poltergeist.instability", "POLTERGEIST Instability", 0.f, 1.f, .42f);
+    addFloat("living.vortex.turbulence", "VORTEX Turbulence", 0.f, 1.f, .82f);
+    addFloat("living.vortex.pressure", "VORTEX Pressure", 0.f, 1.f, .52f);
+    addFloat("living.vortex.collapse", "VORTEX Collapse", 0.f, 1.f, .46f);
+    addFloat("living.mirror.reflection", "MIRROR Reflection", 0.f, 1.f, .58f);
+    addFloat("living.mirror.smear", "MIRROR Smear", 0.f, 1.f, .40f);
+    addFloat("living.mirror.fracture", "MIRROR Fracture", 0.f, 1.f, .34f);
+    addFloat("living.aurora.field", "AURORA Field", 0.f, 1.f, .70f);
+    addFloat("living.aurora.radiance", "AURORA Radiance", 0.f, 1.f, .56f);
+    addFloat("living.aurora.instability", "AURORA Instability", 0.f, 1.f, .36f);
+    addFloat("living.siren.aperture", "SIREN Aperture", 0.f, 1.f, .82f);
+    addFloat("living.siren.breath", "SIREN Breath", 0.f, 1.f, .58f);
+    addFloat("living.siren.edge", "SIREN Edge", 0.f, 1.f, .44f);
+
     addBool("rituals.enabled", "Rituals Enabled", false); addChoice("rituals.pattern", "Rituals Pattern", {"Procession", "Ascension", "Descent", "Circle", "Seance", "Possession", "Sacrifice", "Chaos"}, 0); addChoice("rituals.rate", "Rituals Rate", {"1/4", "1/8", "1/16", "1/32"}, 2); addFloat("rituals.bpm", "Rituals BPM", 30.f, 240.f, 120.f); addFloat("rituals.gate", "Rituals Gate", .05f, .98f, .62f); addFloat("rituals.probability", "Rituals Probability", 0.f, 1.f, 1.f); addFloat("rituals.swing", "Rituals Swing", 0.f, 1.f, 0.f); addFloat("rituals.octaves", "Rituals Octaves", 1.f, 4.f, 1.f);
 
     const char* curseSources[] = {"Off", "Blood", "Wraith", "Velocity", "Key", "Random", "Pulse", "Mod Wheel", "Aftertouch"};
