@@ -22,6 +22,8 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
     if(gen.type>=GeneratorType::ChamberI){
         float& aux1=isCrypt?v.cryptAux1[(size_t)slot]:v.towerAux1[(size_t)slot]; float& aux2=isCrypt?v.cryptAux2[(size_t)slot]:v.towerAux2[(size_t)slot]; const float base=std::sin(T*phase);
         const float pressure=juce::jlimit(0.f,1.f,std::max(channelPressure,v.polyPressure)); const float expression=juce::jlimit(0.f,1.f,v.velocity*.22f+modWheel*.43f+pressure*.35f);
+        auto mixMacro=[](float local,float global,float localWeight){return juce::jlimit(0.f,1.f,local*localWeight+global*(1.f-localWeight));};
+        auto expressive=[&](float macro){return juce::jlimit(0.f,1.f,expression*(.58f+.70f*macro)+pressure*.12f*macro);};
         if(isCrypt){
             switch(gen.type){
                 case GeneratorType::ChamberI:{const float sub=advanceAux(aux1,freq*.5f),abyssTone=advanceAux(aux2,freq*.25f,.23f),wound=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.9f):0.f;return std::tanh((base*.18f+sub*.68f+abyssTone*.36f+wound*.10f)*(1.20f+character*1.55f));}
@@ -31,9 +33,25 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberV:return wraith.renderSample(v.cryptWraith[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return coffin.renderSample(v.cryptCoffin[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVII:return marrow.renderSample(v.cryptMarrow[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
-                case GeneratorType::ChamberVIII:return abyss.renderSample(v.cryptAbyss[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
-                case GeneratorType::ChamberIX:{auto& st=v.cryptPoltergeist[(size_t)slot];const float y=poltergeist.renderSample(st,freq,sh,character,expression,v.velocity,sr);v.ecologySnapshot[PoltergeistCreature]=PoltergeistEngine::stateBus(st);return y;}
-                case GeneratorType::ChamberX:{auto& st=v.cryptVortex[(size_t)slot];const float y=vortex.renderSample(st,freq,sh,character,expression,v.velocity,sr);v.ecologySnapshot[VortexCreature]=VortexEngine::stateBus(st);return y;}
+                case GeneratorType::ChamberVIII:{
+                    const float depth=mixMacro(sh,living.abyssDepth,.52f);
+                    const float dread=mixMacro(character,living.abyssDread,.38f);
+                    return abyss.renderSample(v.cryptAbyss[(size_t)slot],freq,depth,dread,expressive(living.abyssPressure),v.velocity,sr);
+                }
+                case GeneratorType::ChamberIX:{
+                    auto& st=v.cryptPoltergeist[(size_t)slot];
+                    const float charge=mixMacro(sh,living.poltergeistCharge,.48f);
+                    const float instability=mixMacro(character,living.poltergeistInstability,.34f);
+                    const float y=poltergeist.renderSample(st,freq,charge,instability,expressive(living.poltergeistArc),v.velocity,sr);
+                    v.ecologySnapshot[PoltergeistCreature]=PoltergeistEngine::stateBus(st);return y;
+                }
+                case GeneratorType::ChamberX:{
+                    auto& st=v.cryptVortex[(size_t)slot];
+                    const float turbulence=mixMacro(sh,living.vortexTurbulence,.48f);
+                    const float collapse=mixMacro(character,living.vortexCollapse,.32f);
+                    const float y=vortex.renderSample(st,freq,turbulence,collapse,expressive(living.vortexPressure),v.velocity,sr);
+                    v.ecologySnapshot[VortexCreature]=VortexEngine::stateBus(st);return y;
+                }
                 default:break;
             }
         }else{
@@ -45,9 +63,27 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberV:return reliquary.renderSample(v.towerReliquary[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return choir.renderSample(v.towerChoir[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVII:return orrery.renderSample(v.towerOrrery[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
-                case GeneratorType::ChamberVIII:return mirror.renderSample(v.towerMirror[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
-                case GeneratorType::ChamberIX:{auto& st=v.towerAurora[(size_t)slot];const float ext=v.ecologyInbox[AuroraCreature].get(CreatureStateBus::Signal::Field);const float y=aurora.renderSample(st,freq,sh,character,expression,v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);v.ecologySnapshot[AuroraCreature]=AuroraEngine::stateBus(st);return y;}
-                case GeneratorType::ChamberX:{auto& st=v.towerSiren[(size_t)slot];const float ext=v.ecologyInbox[SirenCreature].get(CreatureStateBus::Signal::Pressure);const float y=siren.renderSample(st,freq,sh,character,expression,v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);v.ecologySnapshot[SirenCreature]=SirenEngine::stateBus(st);return y;}
+                case GeneratorType::ChamberVIII:{
+                    const float reflection=mixMacro(sh,living.mirrorReflection,.50f);
+                    const float fracture=mixMacro(character,living.mirrorFracture,.34f);
+                    return mirror.renderSample(v.towerMirror[(size_t)slot],freq,reflection,fracture,expressive(living.mirrorSmear),v.velocity,sr);
+                }
+                case GeneratorType::ChamberIX:{
+                    auto& st=v.towerAurora[(size_t)slot];
+                    const float ext=v.ecologyInbox[AuroraCreature].get(CreatureStateBus::Signal::Field);
+                    const float field=mixMacro(sh,living.auroraField,.46f);
+                    const float instability=mixMacro(character,living.auroraInstability,.34f);
+                    const float y=aurora.renderSample(st,freq,field,instability,expressive(living.auroraRadiance),v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);
+                    v.ecologySnapshot[AuroraCreature]=AuroraEngine::stateBus(st);return y;
+                }
+                case GeneratorType::ChamberX:{
+                    auto& st=v.towerSiren[(size_t)slot];
+                    const float ext=v.ecologyInbox[SirenCreature].get(CreatureStateBus::Signal::Pressure);
+                    const float aperture=mixMacro(sh,living.sirenAperture,.48f);
+                    const float edge=mixMacro(character,living.sirenEdge,.30f);
+                    const float y=siren.renderSample(st,freq,aperture,edge,expressive(living.sirenBreath),v.velocity,sr,ext,ecologyEnabled?ecologyDepth:0.f);
+                    v.ecologySnapshot[SirenCreature]=SirenEngine::stateBus(st);return y;
+                }
                 default:break;
             }
         }
