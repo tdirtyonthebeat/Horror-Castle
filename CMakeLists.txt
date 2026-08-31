@@ -19,14 +19,33 @@ function(hc_console target product)
  target_compile_definitions(${target} PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
  target_link_libraries(${target} PRIVATE juce::juce_audio_utils juce::juce_dsp juce::juce_recommended_config_flags)
 endfunction()
+
 hc_console(HorrorCastleSignatureCheck "Horror Castle Signature Check")
 target_sources(HorrorCastleSignatureCheck PRIVATE tools/SignatureCheck.cpp Source/HorrorCastle/HorrorCastleArchitecture.cpp Source/HorrorCastle/CastleEngineCore.cpp Source/HorrorCastle/CastleEngineScene.cpp Source/HorrorCastle/CastleEngineRender.cpp Source/HorrorCastle/SpectralCorpseEngine.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp Source/HorrorCastle/CoffinBodyEngine.cpp Source/HorrorCastle/ChoirBodyEngine.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp Source/HorrorCastle/RitualEngine.cpp Source/HorrorCastle/GraveChamber.cpp Source/HorrorCastle/PossessionEngine.cpp Source/HorrorCastle/RitualsEngine.cpp Source/HorrorCastle/FactoryPresetManifest.cpp Source/HorrorCastle/Grimoire.cpp Source/HorrorCastle/CurseMatrix.cpp Source/HorrorCastle/CurseChain.cpp)
-hc_console(HorrorCastleLivingEnginesCheck "Horror Castle Living Engines Check");target_sources(HorrorCastleLivingEnginesCheck PRIVATE tools/LivingEnginesCheck.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp)
-hc_console(HorrorCastleCoffinCheck "Horror Castle Coffin Check");target_sources(HorrorCastleCoffinCheck PRIVATE tools/CoffinCheck.cpp Source/HorrorCastle/CoffinBodyEngine.cpp)
-hc_console(HorrorCastleChoirCheck "Horror Castle Choir Check");target_sources(HorrorCastleChoirCheck PRIVATE tools/ChoirCheck.cpp Source/HorrorCastle/ChoirBodyEngine.cpp)
-hc_console(HorrorCastleBestiaryCheck "Horror Castle Bestiary Check");target_sources(HorrorCastleBestiaryCheck PRIVATE tools/BestiaryCheck.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp)
-hc_console(HorrorCastleMirrorAbyssCheck "Horror Castle Mirror Abyss Check");target_sources(HorrorCastleMirrorAbyssCheck PRIVATE tools/MirrorAbyssCheck.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp)
-hc_console(HorrorCastleElectromagneticCheck "Horror Castle Electromagnetic Check");target_sources(HorrorCastleElectromagneticCheck PRIVATE tools/ElectromagneticCheck.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp)
-hc_console(HorrorCastleFluidCheck "Horror Castle Fluid Check");target_sources(HorrorCastleFluidCheck PRIVATE tools/FluidCheck.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp)
-hc_console(HorrorCastleCreatureStateBusCheck "Horror Castle Creature State Bus Check");target_sources(HorrorCastleCreatureStateBusCheck PRIVATE tools/CreatureStateBusCheck.cpp)
-hc_console(HorrorCastleFactoryPresetCheck "Horror Castle Factory Preset Check");target_sources(HorrorCastleFactoryPresetCheck PRIVATE tools/FactoryPresetCheck.cpp Source/HorrorCastle/FactoryPresetManifest.cpp Source/HorrorCastle/Grimoire.cpp)
+
+hc_console(HorrorCastleLivingEnginesCheck "Horror Castle Living Engines Check")
+target_sources(HorrorCastleLivingEnginesCheck PRIVATE tools/LivingEnginesCheck.cpp Source/HorrorCastle/RitualFMEngine.cpp Source/HorrorCastle/BoneResonatorEngine.cpp Source/HorrorCastle/WraithBreathEngine.cpp Source/HorrorCastle/ReliquaryEngine.cpp)
+
+hc_console(HorrorCastleCoffinCheck "Horror Castle Coffin Check")
+target_sources(HorrorCastleCoffinCheck PRIVATE tools/CoffinCheck.cpp Source/HorrorCastle/CoffinBodyEngine.cpp)
+
+hc_console(HorrorCastleChoirCheck "Horror Castle Choir Check")
+target_sources(HorrorCastleChoirCheck PRIVATE tools/ChoirCheck.cpp Source/HorrorCastle/ChoirBodyEngine.cpp)
+
+hc_console(HorrorCastleBestiaryCheck "Horror Castle Bestiary Check")
+target_sources(HorrorCastleBestiaryCheck PRIVATE tools/BestiaryCheck.cpp Source/HorrorCastle/MarrowEngine.cpp Source/HorrorCastle/OrreryEngine.cpp)
+
+hc_console(HorrorCastleMirrorAbyssCheck "Horror Castle Mirror Abyss Check")
+target_sources(HorrorCastleMirrorAbyssCheck PRIVATE tools/MirrorAbyssCheck.cpp Source/HorrorCastle/MirrorSpectralEngine.cpp Source/HorrorCastle/AbyssWaveguideEngine.cpp)
+
+hc_console(HorrorCastleElectromagneticCheck "Horror Castle Electromagnetic Check")
+target_sources(HorrorCastleElectromagneticCheck PRIVATE tools/ElectromagneticCheck.cpp Source/HorrorCastle/PoltergeistEngine.cpp Source/HorrorCastle/AuroraEngine.cpp)
+
+hc_console(HorrorCastleFluidCheck "Horror Castle Fluid Check")
+target_sources(HorrorCastleFluidCheck PRIVATE tools/FluidCheck.cpp Source/HorrorCastle/VortexEngine.cpp Source/HorrorCastle/SirenEngine.cpp)
+
+hc_console(HorrorCastleCreatureStateBusCheck "Horror Castle Creature State Bus Check")
+target_sources(HorrorCastleCreatureStateBusCheck PRIVATE tools/CreatureStateBusCheck.cpp)
+
+hc_console(HorrorCastleFactoryPresetCheck "Horror Castle Factory Preset Check")
+target_sources(HorrorCastleFactoryPresetCheck PRIVATE tools/FactoryPresetCheck.cpp Source/HorrorCastle/FactoryPresetManifest.cpp Source/HorrorCastle/Grimoire.cpp)
