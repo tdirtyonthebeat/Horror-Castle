@@ -68,6 +68,14 @@ void CastleEngine::setParameters(const juce::AudioProcessorValueTreeState& apvts
     patch.ritualMix=get("ritual.mix",patch.ritualMix); patch.hexAmount=get("global.hex",patch.hexAmount); patch.graveDepth=get("grave.reverb",patch.graveDepth);
     master=get("grave.output",.78f); globalGlide=get("global.glide",0.f); globalUnison=juce::jlimit(1,8,(int)std::lround(get("global.unison",1.f)));
     corpsePosition=get("corpse.position",.34f); corpseRot=get("corpse.rot",.22f); corpseFormant=get("corpse.formant",0.f); corpseInharmonic=get("corpse.inharmonic",.08f);
+
+    living.abyssDepth=get("living.abyss.depth",.58f); living.abyssPressure=get("living.abyss.pressure",.46f); living.abyssDread=get("living.abyss.dread",.38f);
+    living.poltergeistCharge=get("living.poltergeist.charge",.70f); living.poltergeistArc=get("living.poltergeist.arc",.48f); living.poltergeistInstability=get("living.poltergeist.instability",.42f);
+    living.vortexTurbulence=get("living.vortex.turbulence",.82f); living.vortexPressure=get("living.vortex.pressure",.52f); living.vortexCollapse=get("living.vortex.collapse",.46f);
+    living.mirrorReflection=get("living.mirror.reflection",.58f); living.mirrorSmear=get("living.mirror.smear",.40f); living.mirrorFracture=get("living.mirror.fracture",.34f);
+    living.auroraField=get("living.aurora.field",.70f); living.auroraRadiance=get("living.aurora.radiance",.56f); living.auroraInstability=get("living.aurora.instability",.36f);
+    living.sirenAperture=get("living.siren.aperture",.82f); living.sirenBreath=get("living.siren.breath",.58f); living.sirenEdge=get("living.siren.edge",.44f);
+
     ecologyEnabled=getb("ecology.enabled",false); ecologyDepth=juce::jlimit(0.f,1.f,get("ecology.depth",.65f)); for(auto& v:voices) configureEcology(v);
     ritualParams.mode=static_cast<RitualMode>(choice("ritual.mode",4,0));ritualParams.mix=get("ritual.mix",0.f);ritualParams.depth=get("ritual.depth",.35f);ritualParams.drive=get("ritual.drive",.12f);ritualParams.width=get("ritual.width",.55f);ritualParams.feedback=get("ritual.feedback",.28f);ritual.setParameters(ritualParams);
     possessionParams.bloodFeed=get("possession.bloodFeed",0.f);possessionParams.aetherLeak=get("possession.aetherLeak",0.f);possessionParams.soulExchange=get("possession.soulExchange",0.f);possessionParams.haunt=get("possession.haunt",0.f);possession.setParameters(possessionParams);
