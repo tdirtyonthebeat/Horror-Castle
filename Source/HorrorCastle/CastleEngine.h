@@ -37,6 +37,14 @@ public:
  float getEcologyMeter(int index) const noexcept { return (index>=0&&index<EcologyMeterCount)?ecologyTelemetry[(size_t)index].load(std::memory_order_relaxed):0.f; }
 private:
  enum CreatureEndpoint : std::uint8_t { VortexCreature=0, SirenCreature=1, PoltergeistCreature=2, AuroraCreature=3 };
+ struct LivingPhysics {
+  float abyssDepth=.58f,abyssPressure=.46f,abyssDread=.38f;
+  float poltergeistCharge=.70f,poltergeistArc=.48f,poltergeistInstability=.42f;
+  float vortexTurbulence=.82f,vortexPressure=.52f,vortexCollapse=.46f;
+  float mirrorReflection=.58f,mirrorSmear=.40f,mirrorFracture=.34f;
+  float auroraField=.70f,auroraRadiance=.56f,auroraInstability=.36f;
+  float sirenAperture=.82f,sirenBreath=.58f,sirenEdge=.44f;
+ } living;
  struct Env { enum Stage{Off,Attack,Decay,Sustain,Release}; Stage stage=Off; float value=0; float attack=.008f,decay=.35f,sustain=.72f,release=.25f; void on(){stage=Attack;} void off(){stage=Release;} float next(double sr){ if(stage==Attack){value+=1.f/(attack*sr);if(value>=1){value=1;stage=Decay;}} else if(stage==Decay){value+=(sustain-value)/(decay*sr);if(std::abs(value-sustain)<1e-4f){value=sustain;stage=Sustain;}} else if(stage==Release){value-=value/(release*sr);if(value<1e-5f){value=0;stage=Off;}} return value;} };
  struct Voice {
   bool active=false,releasing=false; int note=0; float pitchNote=60.f; float velocity=0;
