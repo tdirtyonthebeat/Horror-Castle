@@ -1,5 +1,5 @@
 #include "HorrorCastleProcessor.h"
-#include "../HorrorCastle/HorrorCastleEditor.h"
+#include "../HorrorCastle/LivingCastleEditor.h"
 
 namespace horrorcastle {
 
@@ -63,14 +63,14 @@ bool HorrorCastleProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
 
 juce::AudioProcessorEditor* HorrorCastleProcessor::createEditor()
 {
-    return new HorrorCastleEditor(*this);
+    return new LivingCastleEditor(*this);
 }
 
 void HorrorCastleProcessor::getStateInformation(juce::MemoryBlock& destination)
 {
     auto state = parameters.copyState();
     state.setProperty("stateVersion", Grimoire::CurrentStateVersion, nullptr);
-    state.setProperty("productVersion", "1.2.0", nullptr);
+    state.setProperty("productVersion", "1.3.0", nullptr);
     if (auto xml = state.createXml())
         juce::AudioProcessor::copyXmlToBinary(*xml, destination);
 }
@@ -83,8 +83,6 @@ void HorrorCastleProcessor::setStateInformation(const void* data, int sizeInByte
         Grimoire::migrateState(state);
         if (state.isValid() && state.hasType(parameters.state.getType()))
         {
-            // Merge legacy state into a fresh v1 tree so parameters introduced after
-            // v0.14 keep their defaults instead of disappearing from the state.
             auto merged = parameters.copyState();
             mergeStateTree(merged, state);
             Grimoire::migrateState(merged);

@@ -86,7 +86,18 @@ void GrimoireComponent::refreshButtons()
     pageLabel.setText("PAGE "+String(page+1)+" / "+String(pageCount())+"   •   "+String(filtered.size())+" SPELLS",dontSendNotification);
 }
 
-void GrimoireComponent::selectFactoryIndex(int i){selected=i;refreshButtons();updateDetail();repaint();}
+void GrimoireComponent::selectFactoryIndex(int i)
+{
+    selected=i;
+    refreshButtons();
+    updateDetail();
+    repaint();
+
+    // v1.3: browsing is auditioning. A single click recalls the spell so the
+    // Grimoire behaves like an instrument browser instead of a two-step form.
+    if(selected>=0 && selected<(int)spells.size() && processor.loadFactoryPreset(selected))
+        if(onStatus) onStatus("GRIMOIRE // "+spells[(size_t)selected].name.toUpperCase()+" SUMMONED");
+}
 
 void GrimoireComponent::updateDetail()
 {
