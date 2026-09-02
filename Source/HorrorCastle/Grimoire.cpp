@@ -15,14 +15,65 @@ std::vector<Grimoire::SpellInfo> Grimoire::getFactorySpells() const
 juce::StringArray Grimoire::getFactoryNames() const { juce::StringArray names; for(const auto& s:getFactorySpells()) names.add(s.name); return names; }
 void Grimoire::set(const juce::String& id,float actual){if(auto*p=apvts.getParameter(id)){p->beginChangeGesture();p->setValueNotifyingHost(p->convertTo0to1(actual));p->endChangeGesture();}}
 void Grimoire::setHex(int lane,int source,int curse,int destination,float amount){const auto p=juce::String("hex.curse")+juce::String(juce::jlimit(1,8,lane))+".";set(p+"source",(float)source);set(p+"curse",(float)curse);set(p+"destination",(float)destination);set(p+"amount",amount);}
-void Grimoire::commonReset(){
- set("crypt.master",.78f);set("tower.master",.74f);set("global.hex",1.f);set("crypt.character",.72f);set("tower.character",.70f);
- set("ritual.mode",0.f);set("ritual.mix",.28f);set("ritual.depth",.42f);set("ritual.drive",.20f);set("ritual.width",.55f);set("ritual.feedback",.28f);
- set("grave.reverb",.32f);set("grave.delay",.14f);set("grave.feedback",.24f);set("grave.cutoff",.28f);set("grave.output",.78f);
- set("corpse.position",.34f);set("corpse.rot",.22f);set("corpse.formant",0.f);set("corpse.inharmonic",.08f);
- set("possession.bloodFeed",0.f);set("possession.aetherLeak",0.f);set("possession.soulExchange",0.f);set("possession.haunt",0.f);set("ecology.enabled",0.f);set("ecology.depth",.65f);
- set("rituals.enabled",0.f);set("rituals.pattern",0.f);set("rituals.rate",2.f);set("rituals.bpm",120.f);set("rituals.gate",.62f);set("rituals.probability",1.f);set("rituals.swing",0.f);set("rituals.octaves",1.f);
- for(int i=1;i<=8;++i){const auto p=juce::String("hex.curse")+juce::String(i)+".";set(p+"source",0.f);set(p+"curse",0.f);set(p+"destination",0.f);set(p+"amount",0.f);}
+
+void Grimoire::commonReset()
+{
+    // Factory spells always begin from the complete INIT contract.  No generator,
+    // filter, modulation, effect, ecology, or Living Engine physics value is allowed
+    // to survive from the previously loaded spell.
+    for (const auto* scene : {"crypt", "tower"})
+    {
+        const bool isCrypt = juce::String(scene) == "crypt";
+        for (int g = 1; g <= 3; ++g)
+        {
+            const auto p=[&](const char* control){return param::id(scene,g,control);};
+            set(p("type"),(float)(14+g));
+            set(p("level"),g==1?(isCrypt?.72f:.58f):0.f);
+            set(p("pan"),0.f); set(p("tune"),0.f);
+            set(p("shape"),g==1?.58f:(g==2?.70f:.82f));
+            set(p("spread"),0.f); set(p("enabled"),1.f);
+        }
+        set(param::noise(scene,"enabled"),0.f); set(param::noise(scene,"level"),.08f);
+        for(int f=1;f<=2;++f)
+        {
+            set(param::fid(scene,f,"type"),0.f);
+            set(param::fid(scene,f,"cutoff"),f==1?.42f:.46f);
+            set(param::fid(scene,f,"resonance"),.08f);
+            set(param::fid(scene,f,"drive"),.02f);
+            set(param::fid(scene,f,"enabled"),1.f);
+        }
+        set(param::route(scene),1.f);
+        set(param::scene(scene,"master"),isCrypt?.76f:.62f);
+        set(param::scene(scene,"balance"),isCrypt?-.28f:.28f);
+        set(param::scene(scene,"character"),isCrypt?.38f:.32f);
+        set(param::scene(scene,"crossfm"),0.f); set(param::scene(scene,"crossring"),0.f);
+    }
+
+    set("global.glide",0.f); set("global.unison",1.f); set("global.hex",0.f);
+    set("ritual.mode",0.f);set("ritual.mix",0.f);set("ritual.depth",.35f);set("ritual.drive",.12f);set("ritual.width",.55f);set("ritual.feedback",.28f);
+    set("grave.reverb",.10f);set("grave.delay",.04f);set("grave.feedback",.18f);set("grave.cutoff",.38f);set("grave.output",.82f);
+    set("corpse.position",.34f);set("corpse.rot",.22f);set("corpse.formant",0.f);set("corpse.inharmonic",.08f);
+    set("possession.bloodFeed",0.f);set("possession.aetherLeak",0.f);set("possession.soulExchange",0.f);set("possession.haunt",0.f);
+    set("ecology.enabled",0.f);set("ecology.depth",.65f);
+
+    // Dedicated Living Engine physics defaults.  These are deliberately repeated
+    // here instead of relying on APVTS construction defaults: preset loading happens
+    // inside a live instance, so an explicit reset is the only bleed-proof contract.
+    set("living.abyss.depth",.58f);set("living.abyss.pressure",.46f);set("living.abyss.dread",.38f);
+    set("living.poltergeist.charge",.70f);set("living.poltergeist.arc",.48f);set("living.poltergeist.instability",.42f);
+    set("living.vortex.turbulence",.82f);set("living.vortex.pressure",.52f);set("living.vortex.collapse",.46f);
+    set("living.mirror.reflection",.58f);set("living.mirror.smear",.40f);set("living.mirror.fracture",.34f);
+    set("living.aurora.field",.70f);set("living.aurora.radiance",.56f);set("living.aurora.instability",.36f);
+    set("living.siren.aperture",.82f);set("living.siren.breath",.58f);set("living.siren.edge",.44f);
+
+    set("rituals.enabled",0.f);set("rituals.pattern",0.f);set("rituals.rate",2.f);set("rituals.bpm",120.f);set("rituals.gate",.62f);set("rituals.probability",1.f);set("rituals.swing",0.f);set("rituals.octaves",1.f);
+    for(int i=1;i<=8;++i)
+    {
+        const auto p=juce::String("hex.curse")+juce::String(i)+".";
+        set(p+"source",0.f);set(p+"curse",0.f);set(p+"destination",0.f);set(p+"amount",0.f);
+        set(p+"decay",.25f);set(p+"corruptBias",.22f);set(p+"hauntRate",1.70f);
+        set(p+"possessionFold",.35f);set(p+"decayTime",1.50f);set(p+"madnessSteps",8.f);set(p+"bloodHunger",.65f);
+    }
 }
 
 static float seeded01(std::uint32_t& s){s=s*1664525u+1013904223u;return float((s>>8)&0x00ffffffu)/float(0x00ffffffu);}
@@ -32,23 +83,23 @@ void Grimoire::loadGeneratedFactory(int archetype,std::uint32_t seed)
     const float grave=vary(.34f,.16f),character=vary(.78f,.18f);
     set("crypt.character",character);set("tower.character",vary(.76f,.18f));set("grave.reverb",grave);set("grave.delay",vary(.16f,.12f));set("grave.feedback",vary(.25f,.16f));
     switch(archetype){
-      case 0: // bass
+      case 0:
         set("crypt.g1.type",u()>.5f?17.f:15.f);set("crypt.g1.level",.78f);set("crypt.g1.shape",vary(.78f,.18f));set("crypt.g2.type",u()>.55f?14.f:13.f);set("crypt.g2.level",.28f);set("crypt.g2.tune",-12.f);set("tower.master",vary(.16f,.10f));set("crypt.f1.cutoff",vary(.075f,.035f));set("grave.reverb",vary(.18f,.10f));break;
-      case 1: // lead
+      case 1:
         set("crypt.g1.type",u()>.5f?12.f:9.f);set("tower.g1.type",u()>.45f?16.f:17.f);set("crypt.g1.level",.48f);set("tower.g1.level",.64f);set("tower.g1.shape",vary(.72f,.20f));set("global.glide",vary(.16f,.12f));set("grave.reverb",vary(.28f,.12f));setHex(1,7,2,12,vary(.38f,.18f));break;
-      case 2: // pad
+      case 2:
         set("crypt.g1.type",u()>.5f?9.f:12.f);set("tower.g1.type",u()>.5f?13.f:15.f);set("tower.g2.type",u()>.5f?14.f:16.f);set("crypt.g1.level",.38f);set("tower.g1.level",.48f);set("tower.g2.level",.32f);set("global.unison",4.f+std::floor(u()*3.f));set("grave.reverb",vary(.64f,.16f));set("grave.delay",vary(.28f,.14f));break;
-      case 3: // drone
+      case 3:
         set("crypt.g1.type",u()>.5f?15.f:17.f);set("crypt.g2.type",u()>.5f?13.f:14.f);set("tower.g1.type",u()>.5f?16.f:14.f);set("crypt.g1.level",.58f);set("crypt.g2.level",.30f);set("tower.g1.level",.30f);set("grave.reverb",vary(.52f,.18f));setHex(1,5,2,11,vary(.30f,.20f));break;
-      case 4: // keys/plucks
+      case 4:
         set("crypt.g1.type",u()>.5f?10.f:14.f);set("tower.g1.type",u()>.5f?13.f:15.f);set("crypt.g1.level",.48f);set("tower.g1.level",.52f);set("grave.reverb",vary(.28f,.12f));set("grave.delay",vary(.12f,.08f));break;
-      case 5: // percussion
+      case 5:
         set("crypt.g1.type",u()>.5f?10.f:13.f);set("crypt.g2.type",u()>.5f?16.f:17.f);set("crypt.g1.level",.72f);set("crypt.g2.level",.34f);set("tower.master",.12f);set("grave.reverb",vary(.18f,.10f));set("ritual.drive",vary(.52f,.20f));break;
-      case 6: // rituals
+      case 6:
         set("crypt.g1.type",u()>.5f?10.f:14.f);set("tower.g1.type",u()>.5f?14.f:13.f);set("rituals.enabled",1.f);set("rituals.pattern",std::floor(u()*8.f));set("rituals.rate",std::floor(u()*4.f));set("rituals.probability",vary(.82f,.16f));set("ritual.mix",vary(.50f,.18f));break;
-      case 7: // cinematic FX
+      case 7:
         set("crypt.g1.type",u()>.5f?17.f:12.f);set("tower.g1.type",u()>.5f?16.f:17.f);set("possession.haunt",vary(.62f,.22f));set("ritual.mode",u()>.5f?4.f:2.f);set("ritual.mix",vary(.58f,.18f));set("grave.reverb",vary(.68f,.18f));set("grave.delay",vary(.38f,.16f));break;
-      default: // living ecology
+      default:
         set("crypt.g1.type",u()>.5f?17.f:16.f);set("crypt.g2.type",u()>.5f?16.f:15.f);set("tower.g1.type",u()>.5f?17.f:16.f);set("tower.g2.type",u()>.5f?16.f:15.f);set("crypt.g1.level",.52f);set("crypt.g2.level",.30f);set("tower.g1.level",.48f);set("tower.g2.level",.30f);set("ecology.enabled",1.f);set("ecology.depth",vary(.80f,.18f));set("grave.reverb",vary(.46f,.14f));break;
     }
 }
