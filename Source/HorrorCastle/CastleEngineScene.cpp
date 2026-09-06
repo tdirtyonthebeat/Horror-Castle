@@ -92,13 +92,77 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
     float y=osc(gen.type,phase,sh,freq); if(isCrypt){const float scar=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.7f)*(.04f+.18f*character):0.f,asym=y*std::abs(y)*(.10f+.32f*character);return std::tanh((y+scar-asym)*(1.f+1.15f*character));}
     float glass=0.f;if(freq*2.f<sr*.46f)glass+=.12f*std::sin(T*phase*2.f+sh*.8f);if(freq*5.f<sr*.46f)glass+=.05f*std::sin(T*phase*5.f+sh*2.1f);return std::tanh(y*.82f+glass*(.22f+.38f*character));
 };
+// Engine-aware articulation is intentionally generator-local.  The Castle's
+// species must not all inherit the same temporal fingerprint just because they
+// share a MIDI gate.  IRON is the transient envelope; AMP is the sustained gate.
+auto articulationFor=[&](GeneratorType type,float sh){
+    const float e=juce::jlimit(0.f,1.f,v.amp.value);
+    const float hit=juce::jlimit(0.f,1.f,v.iron.value);
+    const auto shaped=[&](float exponent,float transient,float sustainBias){
+        const float body=std::pow(e,exponent);
+        return body*juce::jlimit(.25f,1.55f,sustainBias+transient*hit*(1.f-.35f*e));
+    };
+    switch(type){
+        case GeneratorType::VA:return shaped(.82f,.16f,.92f);
+        case GeneratorType::Wavetable:return shaped(1.28f,.05f,.98f);
+        case GeneratorType::FM:return shaped(.48f,.42f,.78f);
+        case GeneratorType::PM:return shaped(.62f,.34f,.82f);
+        case GeneratorType::Vector:return shaped(1.08f,.10f,.94f);
+        case GeneratorType::Chip:return shaped(.34f,.50f,.70f);
+        case GeneratorType::Noise:return shaped(.72f,.58f,.64f);
+        case GeneratorType::Resonator:return shaped(.55f,.66f,.72f);
+        default:break;
+    }
+    if(isCrypt){
+        switch(type){
+            case GeneratorType::ChamberI:return shaped(1.46f,.12f,.92f); // UNDERCRYPT: pressure swell
+            case GeneratorType::ChamberII:return shaped(1.08f,.08f,.96f); // CORPSE: resynthesis body
+            case GeneratorType::ChamberIII:return shaped(.42f,.82f,.62f); // BONE: struck
+            case GeneratorType::ChamberIV:return shaped(.78f,.30f,.84f); // ROTATOR: mechanical
+            case GeneratorType::ChamberV:return shaped(1.92f,.02f,1.00f); // WRAITH: breath bloom
+            case GeneratorType::ChamberVI:return shaped(.50f,.74f,.68f); // COFFIN: body hit
+            case GeneratorType::ChamberVII:return shaped(.38f,.88f,.60f); // MARROW: exciter snap
+            case GeneratorType::ChamberVIII:return shaped(1.72f,.04f,1.02f); // ABYSS: inertia
+            case GeneratorType::ChamberIX:return shaped(.30f,.96f,.58f); // POLTERGEIST: discharge
+            case GeneratorType::ChamberX:return shaped(1.38f,.16f,.94f); // VORTEX: spin-up
+            default:break;
+        }
+    }else{
+        switch(type){
+            case GeneratorType::ChamberI:return shaped(.40f,.80f,.66f); // BELL GLASS: strike
+            case GeneratorType::ChamberII:return shaped(.58f,.52f,.78f); // SPIRE: bright attack
+            case GeneratorType::ChamberIII:return shaped(.66f,.38f,.84f); // ASTRAL FM
+            case GeneratorType::ChamberIV:return shaped(.92f,.22f,.90f); // PRISM
+            case GeneratorType::ChamberV:return shaped(1.32f,.08f,.98f); // RELIQUARY
+            case GeneratorType::ChamberVI:return shaped(2.05f,.01f,1.04f); // CHOIR: slow body
+            case GeneratorType::ChamberVII:return shaped(1.12f,.10f,.96f); // ORRERY
+            case GeneratorType::ChamberVIII:return shaped(.76f,.44f,.82f); // MIRROR: reflected onset
+            case GeneratorType::ChamberIX:return shaped(2.30f,.01f,1.06f); // AURORA: long bloom
+            case GeneratorType::ChamberX:return shaped(1.58f,.12f,.98f); // SIREN: pressure catches
+            default:break;
+        }
+    }
+    return e;
+};
+auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float freq){
+    if(!gen.enabled||gen.level<=0.f)return 0.f;
+    float y=signatureOsc(slot,gen,phase,sh,freq);
+    // A small species-specific dynamic bend reinforces identity without adding knobs.
+    const float art=articulationFor(gen.type,sh);
+    if(gen.type==GeneratorType::Noise)y=std::tanh(y*(.75f+1.15f*sh));
+    else if(gen.type==GeneratorType::Resonator||gen.type==GeneratorType::ChamberIII)y=std::tanh(y*(1.05f+.55f*v.iron.value));
+    return y*art*gen.level;
+};
 const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/12.f); float x=0;
-if(g[0].enabled)x+=signatureOsc(0,g[0],v.pa,shapeA,fA)*g[0].level;if(g[1].enabled)x+=signatureOsc(1,g[1],v.pb,shapeB,fB)*g[1].level;if(g[2].enabled)x+=signatureOsc(2,g[2],v.pc,shapeC,fC)*g[2].level;x*=.42f;if(s.voice.noise.enabled)x+=rnd()*s.voice.noise.level*.2f;
+x+=renderSlot(0,g[0],v.pa,shapeA,fA);x+=renderSlot(1,g[1],v.pb,shapeB,fB);x+=renderSlot(2,g[2],v.pc,shapeC,fC);
+x*=.42f;if(s.voice.noise.enabled)x+=rnd()*s.voice.noise.level*.2f*juce::jlimit(0.f,1.f,v.amp.value);
 FilterCell fa=s.voice.filters[0],fb=s.voice.filters[1];fa.cutoff=juce::jlimit(.002f,.48f,fa.cutoff+sceneCut*.20f);fb.cutoff=juce::jlimit(.002f,.48f,fb.cutoff+sceneCut*.16f);fa.drive=juce::jlimit(0.f,1.f,fa.drive+sceneDrive);fb.drive=juce::jlimit(0.f,1.f,fb.drive+sceneDrive);
 float& za=isCrypt?v.cfa:v.tfa;float& zb=isCrypt?v.cfb:v.tfb;float a=filter(x,za,fa,mod),b=filter(x,zb,fb,mod*.7f);if(s.voice.filterRoute==Route::Parallel)x=.5f*(a+b);else if(s.voice.filterRoute==Route::Crossfeed)x=.65f*a+.35f*b;else if(s.voice.filterRoute==Route::Split)x=.78f*a+.22f*b;else x=filter(a,zb,fb,mod*.7f);
 float stereoSide=0.f;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
 else{const float bellA=(f*2.41421356f<sr*.46f)?std::sin(T*v.towerBellPhaseA):0.f,bellB=(f*3.73205081f<sr*.46f)?std::sin(T*v.towerBellPhaseB+.37f):0.f,celestial=bellA*(.08f+.30f*character)+bellB*(.03f+.17f*character),alpha=1.f-std::exp(-T*2500.f/(float)sr);v.towerBody+=alpha*(x-v.towerBody);const float air=x-v.towerBody;x=std::tanh(x*(.78f-.20f*character)+air*(.14f+.48f*character)+celestial);stereoSide=(bellA-bellB)*(.015f+.11f*character);}
-const float chamberEnvelope=isCrypt?std::pow(juce::jlimit(0.f,1.f,v.amp.value),.78f):v.amp.value*(1.f+.22f*character*v.iron.value);x*=chamberEnvelope*v.velocity*s.voice.master;
+// Generator-local articulation already owns the amplitude contour. Keep only
+// velocity and room gain here so downstream processing cannot homogenize species.
+x*=v.velocity*s.voice.master;
 float levelSum=0.f,weightedPan=0.f,spread=0.f;for(const auto& gen:g){if(gen.enabled){levelSum+=gen.level;weightedPan+=gen.pan*gen.level;spread+=gen.spread*gen.level;}}if(levelSum>1.0e-5f){weightedPan/=levelSum;spread/=levelSum;}float pan=juce::jlimit(-1.f,1.f,weightedPan+s.sceneBalance);const float unisonWidth=(globalUnison-1)/7.f;stereoSide+=x*spread*(.06f+.18f*unisonWidth)*std::sin(T*wander+.7f);const float left=x*(.5f-.5f*pan)+stereoSide*(.5f+.25f*character),right=x*(.5f+.5f*pan)-stereoSide*(.5f+.25f*character);l+=left;r+=right;}
 
 } // namespace horrorcastle
