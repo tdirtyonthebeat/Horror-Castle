@@ -44,13 +44,61 @@ float CastleEngine::osc(GeneratorType t,float p,float shape,float f){
 const float T=juce::MathConstants<float>::twoPi; const float dt=juce::jlimit(1.0e-6f,.49f,f/(float)sr);
 switch(t){
 case GeneratorType::VA:{float saw=2.f*p-1.f-polyBlep(p,dt);const float width=juce::jlimit(.12f,.88f,.66f-.32f*shape);float pulse=p<width?1.f:-1.f;pulse+=polyBlep(p,dt);float e=p-width;if(e<0.f)e+=1.f;pulse-=polyBlep(e,dt);return saw*(1.f-shape)+pulse*shape;}
-case GeneratorType::Wavetable:return .72f*std::sin(T*p)+.28f*std::sin(T*2*p+shape*5.f);
-case GeneratorType::FM:return std::sin(T*p+shape*3.f*std::sin(T*p*2.01f));
-case GeneratorType::PM:return std::sin(T*p+shape*2.f*std::sin(T*p*3.f));
-case GeneratorType::Vector:return (1.f-shape)*std::sin(T*p)+shape*std::sin(T*2.f*p);
-case GeneratorType::Chip:{float q=p<.5f?1.f:-1.f;q+=polyBlep(p,dt);float e=p-.5f;if(e<0)e+=1.f;q-=polyBlep(e,dt);return std::round(q*7.f)/7.f;}
-case GeneratorType::Noise:return rnd();
-case GeneratorType::Resonator:{float y=std::sin(T*p);if(f*2.03f<sr*.46f)y+=.4f*std::sin(T*p*2.03f);if(f*3.97f<sr*.46f)y+=.2f*std::sin(T*p*3.97f);return y;}
+case GeneratorType::Wavetable:{
+    // Spectral table morph: SHAPE travels from hollow fundamental to bright,
+    // odd/even-rich spectra instead of acting like a second generic sine blend.
+    const float a=std::sin(T*p);
+    const float b=(f*2.f<sr*.46f)?std::sin(T*2.f*p+.35f):0.f;
+    const float h3=(f*3.f<sr*.46f)?std::sin(T*3.f*p+1.1f):0.f;
+    const float h5=(f*5.f<sr*.46f)?std::sin(T*5.f*p+.72f):0.f;
+    const float dark=.88f*a+.12f*h3;
+    const float bright=.42f*a+.32f*b+.18f*h3+.12f*h5;
+    return std::tanh((dark*(1.f-shape)+bright*shape)*(1.0f+.35f*shape));
+}
+case GeneratorType::FM:{
+    // Metallic, index-driven family with an intentionally non-integer ratio.
+    const float ratio=1.37f+2.91f*shape;
+    const float index=.25f+7.75f*shape*shape;
+    const float mod=std::sin(T*p*ratio+.31f);
+    return std::sin(T*p+index*mod);
+}
+case GeneratorType::PM:{
+    // Harder phase-warp family: fixed high-ratio carrier fold, very unlike FM.
+    const float warp=std::sin(T*p*(4.01f+2.0f*shape));
+    const float folded=std::sin(T*p+(.30f+4.7f*shape)*warp);
+    return std::tanh(folded*(1.15f+1.4f*shape));
+}
+case GeneratorType::Vector:{
+    // Four-corner vector path: sine -> triangle -> saw-ish -> hollow octave.
+    const float sine=std::sin(T*p);
+    const float tri=(2.f/juce::MathConstants<float>::pi)*std::asin(std::sin(T*p));
+    const float saw=2.f*p-1.f-polyBlep(p,dt);
+    const float octave=(f*2.f<sr*.46f)?std::sin(T*2.f*p+.65f):0.f;
+    const float q=shape*3.f; const int region=juce::jlimit(0,2,(int)q); const float t=q-(float)region;
+    if(region==0)return sine*(1.f-t)+tri*t;
+    if(region==1)return tri*(1.f-t)+saw*t;
+    return saw*(1.f-t)+(sine*.35f+octave*.65f)*t;
+}
+case GeneratorType::Chip:{
+    // Duty-cycle and bit-depth are coupled into one deliberately digital macro.
+    const float width=.12f+.70f*shape;
+    float q=p<width?1.f:-1.f; q+=polyBlep(p,dt); float e=p-width;if(e<0)e+=1.f;q-=polyBlep(e,dt);
+    const float steps=2.f+std::floor((1.f-shape)*14.f);
+    const float staircase=std::round((2.f*p-1.f)*steps)/steps;
+    return juce::jlimit(-1.f,1.f,q*(.72f-.28f*shape)+staircase*(.18f+.42f*shape));
+}
+case GeneratorType::Noise:{
+    // Pitched-noise window makes this family obviously textural even at neutral settings.
+    const float gate=.30f+.70f*std::abs(std::sin(T*p*(1.f+7.f*shape)));
+    return rnd()*gate;
+}
+case GeneratorType::Resonator:{
+    float y=.72f*std::sin(T*p);
+    if(f*2.03f<sr*.46f)y+=(.18f+.30f*shape)*std::sin(T*p*2.03f+.17f);
+    if(f*3.97f<sr*.46f)y+=(.10f+.25f*shape)*std::sin(T*p*3.97f+.73f);
+    if(f*6.91f<sr*.46f)y+=.14f*shape*std::sin(T*p*6.91f+1.21f);
+    return std::tanh(y*(1.0f+.55f*shape));
+}
 default:return std::sin(T*p);
 }}
 float CastleEngine::filter(float x,float&z,const FilterCell&f,float mod){if(!f.enabled)return x;float c=juce::jlimit(.002f,.48f,f.cutoff+mod),q=juce::jlimit(.05f,1.f,f.resonance),a=std::exp(-juce::MathConstants<float>::twoPi*c),lp=(1-a)*x+a*z;z=lp;float y=lp;if(f.type==FilterType::HighPass)y=x-lp;else if(f.type==FilterType::BandPass)y=.5f*(x-lp);else if(f.type==FilterType::Notch)y=x-.7f*lp;else if(f.type==FilterType::Comb){float comb=x+.72f*z;z=x;y=.55f*comb;}else if(f.type==FilterType::Shaper)y=std::tanh(lp*(1+f.drive*8.f));else y=clip(lp*(1+f.drive*3.f+q*.35f));return y;}
