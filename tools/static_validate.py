@@ -17,6 +17,10 @@ for term in ['abyss.renderSample','mirror.renderSample','poltergeist.renderSampl
 require(all(x in architecture for x in ['ChamberVIII','ChamberIX','ChamberX']),'new chamber identities missing');require('jlimit(0,17,v)' in text('Source/HorrorCastle/CastleEngineCore.cpp'),'generator loader range wrong')
 for f in ['Source/UI/NervousSystemComponent.h','Assets/StoneShadow/backdrop.png']:require((root/f).exists(),f'missing UI asset/module {f}')
 require('return new LivingCastleEditor(*this)' in processor,'production editor wrapper missing');living=text('Source/HorrorCastle/LivingCastleEditor.h');nervous=text('Source/UI/NervousSystemComponent.h');require('NERVOUS SYSTEM' in living and 'getEcologyMeter' in nervous,'Nervous System UI incomplete')
+editor=text('Source/HorrorCastle/HorrorCastleEditor.cpp');signature=text('tools/SignatureCheck.cpp')
+require('TYPE + LEVEL + MORPH' in editor and 'makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"MORPH")' in editor,'simplified generator workflow missing')
+require('&crypt.genTune[0]' in editor and '&tower.genTune[0]' in editor,'technical tuning controls not moved behind UNDERCROFT')
+require('nearest generator fingerprint distance' in signature and 'MORPH audibly changes every CRYPT generator' in signature,'all-generator fingerprint regression missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
  if f.is_file() and f.suffix in{'.h','.cpp','.c','.mm'}:
@@ -32,4 +36,6 @@ print('PASS  data-driven factory manifest targets exactly 100 spells')
 print('PASS  legacy factory indices 0-43 remain append-only compatible')
 print('PASS  deterministic archetypes scale bank without switch-case explosion')
 print('PASS  dedicated factory-preset QA target is compiled in CI')
+print('PASS  simplified TYPE + LEVEL + MORPH main workflow')
+print('PASS  every generator is fingerprint-gated for audible distinction')
 print('PASS  independent release Source/ naming scan')
