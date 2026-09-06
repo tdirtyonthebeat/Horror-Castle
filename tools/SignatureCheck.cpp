@@ -151,6 +151,31 @@ int main(int argc,char* argv[])
              <<" ratio="<<(corpseBrightness>1.0e-9f?spireBrightness/corpseBrightness:0.f)<<"\n";
     check(spireBrightness>corpseBrightness*1.10f,"SPECTRAL SPIRE lives above CORPSE");
 
+    // Full generator fingerprint gate: every selectable generator must produce a
+    // materially different neutral render, and its single MORPH control must move it.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<Render> fingerprints;
+        fingerprints.reserve(18);
+        bool allFinite=true, allMorph=true;
+        float nearest=1000.f;
+        for(int type=0;type<18;++type)
+        {
+            auto base=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.24f);});
+            auto moved=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.86f);});
+            allFinite=allFinite&&finite(base)&&finite(moved)&&rms(base)>.00015f;
+            allMorph=allMorph&&difference(base,moved)>.006f;
+            fingerprints.push_back(std::move(base));
+        }
+        for(size_t i=0;i<fingerprints.size();++i)
+            for(size_t j=i+1;j<fingerprints.size();++j)
+                nearest=std::min(nearest,difference(fingerprints[i],fingerprints[j]));
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest generator fingerprint distance="<<nearest<<"\n";
+        check(allFinite,isCrypt?"all 18 CRYPT generators are audible and finite":"all 18 TOWER generators are audible and finite");
+        check(allMorph,isCrypt?"MORPH audibly changes every CRYPT generator":"MORPH audibly changes every TOWER generator");
+        check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
+    }
+
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
     auto corpseRotSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.rot",.92f);});
     auto corpseFormantSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.formant",.82f);});
