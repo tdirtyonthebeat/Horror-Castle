@@ -253,13 +253,13 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
         auto addG=[&](int i){
             makeChoice(panel.genType[i],param::id(s,i+1,"type"),"GEN "+String(i+1));
             makeControl(panel.genLevel[i],param::id(s,i+1,"level"),"LEVEL");
-            makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"SHAPE");
+            makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"MORPH");
             makeControl(panel.genTune[i],param::id(s,i+1,"tune"),"TUNE");
             setAccent(panel.genType[i],key);setAccent(panel.genLevel[i],key);setAccent(panel.genShape[i],key);setAccent(panel.genTune[i],key);
         };
         for(int i=0;i<3;++i)addG(i);
         makeControl(panel.noise,param::noise(s,"level"),"NOISE");
-        makeControl(panel.f1Cut,param::fid(s,1,"cutoff"),"CUTOFF A");
+        makeControl(panel.f1Cut,param::fid(s,1,"cutoff"),"TONE");
         makeControl(panel.f1Res,param::fid(s,1,"resonance"),"RES A");
         makeControl(panel.f2Cut,param::fid(s,2,"cutoff"),"CUTOFF B");
         makeControl(panel.f2Res,param::fid(s,2,"resonance"),"RES B");
@@ -327,7 +327,7 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
     corpseStatus.setText("24 PARTIALS  //  FRAME MORPH  //  FORMANT  //  ROT",dontSendNotification);
     corpseStatus.setFont(FontOptions(8.5f));corpseStatus.setColour(Label::textColourId,theme::parchment().withAlpha(.58f));addAndMakeVisible(corpseStatus);
 
-    status.setText("STONE & SHADOW  //  SPECTRAL CORPSE ACTIVE",dontSendNotification);
+    status.setText("SIMPLE CASTLE  //  TYPE + LEVEL + MORPH  //  UNDERCROFT FOR DEEP EDITING",dontSendNotification);
     status.setFont(FontOptions(8.5f));status.setColour(Label::textColourId,theme::parchment().withAlpha(.54f));addAndMakeVisible(status);
 
     uiReady=true;
@@ -362,6 +362,11 @@ void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
     auto setControlVisible=[&](Control& c){if(c.label)c.label->setVisible(show);if(c.slider)c.slider->setVisible(show);};
     for(auto* c:{&corpsePosition,&corpseRot,&corpseFormant,&corpseInharmonic,
                   &crypt.f1Drive,&crypt.f2Drive,&tower.f1Drive,&tower.f2Drive,
+                  &crypt.genTune[0],&crypt.genTune[1],&crypt.genTune[2],
+                  &tower.genTune[0],&tower.genTune[1],&tower.genTune[2],
+                  &crypt.noise,&crypt.f1Res,&crypt.f2Cut,&crypt.f2Res,&crypt.balance,
+                  &tower.noise,&tower.f1Res,&tower.f2Cut,&tower.f2Res,&tower.balance,
+                  &ritualWidth,&ritualFeedback,&graveFeedback,
                   &bloodFeed,&aetherLeak,&soulExchange,&possessionHaunt,
                   &ritualsBpm,&ritualsGate,&ritualsProbability,&ritualsSwing,&ritualsOctaves})
         setControlVisible(*c);
@@ -369,7 +374,7 @@ void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
     for(auto* t:{&crypt.crossFm,&crypt.crossRing,&tower.crossFm,&tower.crossRing,&ritualsEnabled})
         if(t->button)t->button->setVisible(show);
 
-    for(auto* c:{&ritualsPattern,&ritualsRate}){
+    for(auto* c:{&ritualsPattern,&ritualsRate,&crypt.route,&tower.route}){
         if(c->label)c->label->setVisible(show);
         if(c->box)c->box->setVisible(show);
     }
