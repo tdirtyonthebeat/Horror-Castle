@@ -52,6 +52,23 @@ void HorrorCastleProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     juce::ScopedNoDenormals noDenormals;
     engine.setParameters(parameters);
     engine.render(buffer, midi);
+
+    // UI telemetry only: bounded, lock-free and allocation-free on the audio thread.
+    const int n=buffer.getNumSamples();
+    if(n>0){
+        const float* l=buffer.getReadPointer(0); const float* r=buffer.getNumChannels()>1?buffer.getReadPointer(1):l;
+        double side=0.0,mid=0.0;
+        for(int i=0;i<n;++i){soulWave[soulWrite++%soulWave.size()].store(.5f*(l[i]+r[i]),std::memory_order_relaxed);const float m=l[i]+r[i],s=l[i]-r[i];mid+=m*m;side+=s*s;}
+        soulWidth.store((float)juce::jlimit(0.0,1.0,std::sqrt(side/std::max(1.0e-12,mid))),std::memory_order_relaxed);
+        constexpr int bins=64;
+        for(int k=0;k<bins;++k){
+            const int a=k*n/bins,b=(k+1)*n/bins;double energy=0.0;
+            for(int i=a;i<b;++i){const float x=.5f*(l[i]+r[i]);energy+=x*x;}
+            const float e=(b>a)?(float)std::sqrt(energy/(b-a)):0.f;
+            const float old=soulSpectrum[(size_t)k].load(std::memory_order_relaxed);
+            soulSpectrum[(size_t)k].store(std::max(e,old*.86f),std::memory_order_relaxed);
+        }
+    }
 }
 
 #ifndef JucePlugin_PreferredChannelConfigurations
@@ -64,6 +81,15 @@ bool HorrorCastleProcessor::isBusesLayoutSupported(const BusesLayout& layouts) c
 juce::AudioProcessorEditor* HorrorCastleProcessor::createEditor()
 {
     return new LivingCastleEditor(*this);
+}
+
+void HorrorCastleProcessor::copySoulGlass(std::array<float,512>& wave, std::array<float,64>& spectrum, float& width) const noexcept
+{
+    const size_t head=soulWrite;
+    for(size_t i=0;i<wave.size();++i)wave[i]=soulWave[(head+i)%soulWave.size()].load(std::memory_order_relaxed);
+    float peak=.0001f;for(size_t i=0;i<spectrum.size();++i){spectrum[i]=soulSpectrum[i].load(std::memory_order_relaxed);peak=std::max(peak,spectrum[i]);}
+    for(auto& x:spectrum)x=juce::jlimit(0.f,1.f,x/peak);
+    width=soulWidth.load(std::memory_order_relaxed);
 }
 
 void HorrorCastleProcessor::getStateInformation(juce::MemoryBlock& destination)
