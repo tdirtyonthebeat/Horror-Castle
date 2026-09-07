@@ -19,6 +19,9 @@ for f in ['Source/UI/NervousSystemComponent.h','Assets/StoneShadow/backdrop.png'
 require('return new LivingCastleEditor(*this)' in processor,'production editor wrapper missing');living=text('Source/HorrorCastle/LivingCastleEditor.h');nervous=text('Source/UI/NervousSystemComponent.h');require('NERVOUS SYSTEM' in living and 'getEcologyMeter' in nervous,'Nervous System UI incomplete')
 editor=text('Source/HorrorCastle/HorrorCastleEditor.cpp');signature=text('tools/SignatureCheck.cpp')
 require('TYPE + LEVEL + MORPH' in editor and 'makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"MORPH")' in editor,'simplified generator workflow missing')
+require('PICK A CREATURE + MORPH IT' in editor and '"RITUAL"' in editor and '"SPACE"' in editor and '"CURSE"' in editor,'musical-intent main macros missing')
+require(all(x in editor for x in ['&ritualDepth','&ritualDrive','&graveDelay','&graveTone','&graveOutput']),'secondary Ritual/Grave controls not moved behind deep edit')
+require('DEEP EDIT' in living,'Living Physics not presented as optional deep edit')
 require('&crypt.genTune[0]' in editor and '&tower.genTune[0]' in editor,'technical tuning controls not moved behind UNDERCROFT')
 require('nearest generator fingerprint distance' in signature and 'MORPH audibly changes every CRYPT generator' in signature,'all-generator fingerprint regression missing')
 source_hits=[]
