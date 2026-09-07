@@ -19,7 +19,7 @@ public:
         addAndMakeVisible(chrome);
         chrome.toBack();
 
-        physicsToggle.setButtonText("ENGINE PHYSICS");
+        physicsToggle.setButtonText("DEEP EDIT");
         physicsToggle.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff080a0d));
         physicsToggle.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffd1a39d));
         physicsToggle.setColour(juce::TextButton::textColourOnId,juce::Colour(0xffffc5b9));
@@ -40,13 +40,13 @@ public:
             nervousSystem.setVisible(false);
             nervousToggle.setButtonText("NERVOUS SYSTEM");
             physics.setVisible(show);
-            physicsToggle.setButtonText(show?"CLOSE ENGINE PHYSICS":"ENGINE PHYSICS");
+            physicsToggle.setButtonText(show?"CLOSE DEEP EDIT":"DEEP EDIT");
             if(show)physics.toFront(false);
         };
         nervousToggle.onClick=[this]{
             const bool show=!nervousSystem.isVisible();
             physics.setVisible(false);
-            physicsToggle.setButtonText("ENGINE PHYSICS");
+            physicsToggle.setButtonText("DEEP EDIT");
             nervousSystem.setVisible(show);
             nervousToggle.setButtonText(show?"CLOSE NERVOUS SYSTEM":"NERVOUS SYSTEM");
             if(show)nervousSystem.toFront(false);
