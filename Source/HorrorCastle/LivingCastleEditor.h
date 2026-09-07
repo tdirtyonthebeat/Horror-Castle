@@ -33,7 +33,7 @@ public:
             focusedCrypt=crypt;focusedType=type;focusedSlot=slot;
             creaturePortrait.focusCreature(crypt,type);
             soulGlass.focusCreature(crypt,type);
-            grimoire.showCreatureGuide(crypt,type);
+            showGrimoireCreatureGuide(crypt,type);
         };
 
         flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
