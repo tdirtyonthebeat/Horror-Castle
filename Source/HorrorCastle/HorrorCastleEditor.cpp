@@ -327,7 +327,7 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
     corpseStatus.setText("24 PARTIALS  //  FRAME MORPH  //  FORMANT  //  ROT",dontSendNotification);
     corpseStatus.setFont(FontOptions(8.5f));corpseStatus.setColour(Label::textColourId,theme::parchment().withAlpha(.58f));addAndMakeVisible(corpseStatus);
 
-    status.setText("SIMPLE CASTLE  //  TYPE + LEVEL + MORPH  //  UNDERCROFT FOR DEEP EDITING",dontSendNotification);
+    status.setText("SIMPLE CASTLE  //  PICK A CREATURE + MORPH IT  //  RITUAL + SPACE + CURSE",dontSendNotification);
     status.setFont(FontOptions(8.5f));status.setColour(Label::textColourId,theme::parchment().withAlpha(.54f));addAndMakeVisible(status);
 
     uiReady=true;
@@ -378,6 +378,12 @@ void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
         if(c->label)c->label->setVisible(show);
         if(c->box)c->box->setVisible(show);
     }
+
+    // SIMPLE CASTLE: the main page keeps only controls with an immediate,
+    // unmistakable musical job.  Everything else remains automatable and
+    // preset-compatible, but lives behind UNDERCROFT / DEEP EDIT.
+    for(auto* c:{&ritualDepth,&ritualDrive,&graveDelay,&graveTone,&graveOutput})
+        setControlVisible(*c);
 
     for(auto* l:{&undercroftTitle,&corpseTitle,&corpseStatus,&advancedCryptTitle,&advancedTowerTitle,&possessionTitle,&ritualsTitle})
         l->setVisible(show);
