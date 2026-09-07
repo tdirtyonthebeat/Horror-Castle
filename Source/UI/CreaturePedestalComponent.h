@@ -38,6 +38,7 @@ public:
     }
 
     std::function<void(bool,int,int)> onFocus;
+    void setFocused(bool shouldFocus){focused=shouldFocus;repaint();}
 
     void paint(juce::Graphics& g) override
     {
@@ -47,7 +48,8 @@ public:
         const auto& law=synthesis_contract::get(static_cast<GeneratorType>(type),crypt);
 
         g.setColour(juce::Colour(0xdd05070a));g.fillRoundedRectangle(r,8.f);
-        g.setColour(accent.withAlpha(.28f+.56f*energy));g.drawRoundedRectangle(r.reduced(.7f),8.f,1.2f);
+        g.setColour(accent.withAlpha((focused?.62f:.28f)+.32f*energy));g.drawRoundedRectangle(r.reduced(.7f),8.f,focused?2.0f:1.2f);
+        if(focused){g.setColour(accent.withAlpha(.08f+.12f*energy));g.fillRoundedRectangle(r.reduced(3.f),6.f);}
 
         // Live altar halo: real per-creature audio energy, not parameter level.
         auto altar=juce::Rectangle<float>(10.f,70.f,(float)getWidth()-20.f,104.f);
@@ -119,7 +121,7 @@ private:
 
     HorrorCastleProcessor& processor;
     juce::AudioProcessorValueTreeState& state;
-    juce::String scene; int index=1; float energy=0.f,phase=0.f; juce::Colour accent;
+    juce::String scene; int index=1; float energy=0.f,phase=0.f; bool focused=false; juce::Colour accent;
     juce::ComboBox creature; juce::Slider morph;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> typeA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> morphA;
