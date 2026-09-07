@@ -58,7 +58,7 @@ void HorrorCastleProcessor::processBlock(juce::AudioBuffer<float>& buffer,
     if(n>0){
         const float* l=buffer.getReadPointer(0); const float* r=buffer.getNumChannels()>1?buffer.getReadPointer(1):l;
         double side=0.0,mid=0.0;
-        for(int i=0;i<n;++i){soulWave[soulWrite++%soulWave.size()].store(.5f*(l[i]+r[i]),std::memory_order_relaxed);const float m=l[i]+r[i],s=l[i]-r[i];mid+=m*m;side+=s*s;}
+        for(int i=0;i<n;++i){const size_t wi=soulWrite.fetch_add(1,std::memory_order_relaxed);soulWave[wi%soulWave.size()].store(.5f*(l[i]+r[i]),std::memory_order_relaxed);const float m=l[i]+r[i],s=l[i]-r[i];mid+=m*m;side+=s*s;}
         soulWidth.store((float)juce::jlimit(0.0,1.0,std::sqrt(side/std::max(1.0e-12,mid))),std::memory_order_relaxed);
         constexpr int bins=64;
         for(int k=0;k<bins;++k){
@@ -85,7 +85,7 @@ juce::AudioProcessorEditor* HorrorCastleProcessor::createEditor()
 
 void HorrorCastleProcessor::copySoulGlass(std::array<float,512>& wave, std::array<float,64>& spectrum, float& width) const noexcept
 {
-    const size_t head=soulWrite;
+    const size_t head=soulWrite.load(std::memory_order_relaxed);
     for(size_t i=0;i<wave.size();++i)wave[i]=soulWave[(head+i)%soulWave.size()].load(std::memory_order_relaxed);
     float peak=.0001f;for(size_t i=0;i<spectrum.size();++i){spectrum[i]=soulSpectrum[i].load(std::memory_order_relaxed);peak=std::max(peak,spectrum[i]);}
     for(auto& x:spectrum)x=juce::jlimit(0.f,1.f,x/peak);
