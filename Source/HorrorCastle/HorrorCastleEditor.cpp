@@ -496,6 +496,27 @@ void HorrorCastleEditor::resized()
     int rx=390;for(auto* c:{&ritualsBpm,&ritualsGate,&ritualsProbability,&ritualsSwing,&ritualsOctaves}){knob(*c,rx,856);rx+=100;}
 }
 
+void HorrorCastleEditor::setPerformanceMode(bool simplified)
+{
+    // PERFORMANCE is the default Necromancer flow. Generator identity + MORPH
+    // stay visible; tuning, mixer/filter plumbing, HEX and Grave/Ritual internals
+    // recede until the user explicitly asks for the laboratory.
+    auto showControl=[](Control& c,bool show){if(c.label)c.label->setVisible(show);if(c.slider)c.slider->setVisible(show);};
+    auto showChoice=[](Choice& c,bool show){if(c.label)c.label->setVisible(show);if(c.box)c.box->setVisible(show);};
+    auto simplifyScene=[&](ScenePanel& p){
+        for(int i=0;i<3;++i){showControl(p.genLevel[(size_t)i],!simplified);showControl(p.genTune[(size_t)i],!simplified);}
+        for(auto* x:{&p.noise,&p.f1Cut,&p.f1Res,&p.f2Cut,&p.f2Res,&p.master,&p.balance,&p.character})showControl(*x,!simplified);
+        showChoice(p.route,!simplified);
+    };
+    simplifyScene(crypt); simplifyScene(tower);
+    for(auto* x:{&ritualMix,&ritualDepth,&ritualDrive,&ritualWidth,&ritualFeedback,&graveReverb,&graveDelay,&graveFeedback,&graveTone,&graveOutput,&hexAmount})showControl(*x,!simplified);
+    showChoice(ritualMode,!simplified);
+    ritualTitle.setVisible(!simplified);graveTitle.setVisible(!simplified);status.setVisible(!simplified);
+    hexMatrix.setVisible(!simplified);curseInspector.setVisible(!simplified);
+    undercroftToggle.setVisible(!simplified);
+    if(simplified){setUndercroftVisible(false);setGrimoireVisible(false);}
+}
+
 void HorrorCastleEditor::timerCallback()
 {
     atmospherePhase+=.025f;
