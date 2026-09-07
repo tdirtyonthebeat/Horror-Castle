@@ -1,4 +1,5 @@
 #include "CastleEngine.h"
+#include "SynthesisFamilyContract.h"
 #include <algorithm>
 #include <cmath>
 
@@ -108,53 +109,13 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
 // species must not all inherit the same temporal fingerprint just because they
 // share a MIDI gate.  IRON is the transient envelope; AMP is the sustained gate.
 auto articulationFor=[&](GeneratorType type,float sh){
+    const auto& contract=synthesis_contract::get(type,isCrypt);
     const float e=juce::jlimit(0.f,1.f,v.amp.value);
     const float hit=juce::jlimit(0.f,1.f,v.iron.value);
-    const auto shaped=[&](float exponent,float transient,float sustainBias){
-        const float body=std::pow(e,exponent);
-        return body*juce::jlimit(.25f,1.55f,sustainBias+transient*hit*(1.f-.35f*e));
-    };
-    switch(type){
-        case GeneratorType::VA:return shaped(.82f,.16f,.92f);
-        case GeneratorType::Wavetable:return shaped(1.28f,.05f,.98f);
-        case GeneratorType::FM:return shaped(.48f,.42f,.78f);
-        case GeneratorType::PM:return shaped(.62f,.34f,.82f);
-        case GeneratorType::Vector:return shaped(1.08f,.10f,.94f);
-        case GeneratorType::Chip:return shaped(.34f,.50f,.70f);
-        case GeneratorType::Noise:return shaped(.72f,.58f,.64f);
-        case GeneratorType::Resonator:return shaped(.55f,.66f,.72f);
-        default:break;
-    }
-    if(isCrypt){
-        switch(type){
-            case GeneratorType::ChamberI:return shaped(1.46f,.12f,.92f); // UNDERCRYPT: pressure swell
-            case GeneratorType::ChamberII:return shaped(1.08f,.08f,.96f); // CORPSE: resynthesis body
-            case GeneratorType::ChamberIII:return shaped(.42f,.82f,.62f); // BONE: struck
-            case GeneratorType::ChamberIV:return shaped(.78f,.30f,.84f); // ROTATOR: mechanical
-            case GeneratorType::ChamberV:return shaped(1.92f,.02f,1.00f); // WRAITH: breath bloom
-            case GeneratorType::ChamberVI:return shaped(.50f,.74f,.68f); // COFFIN: body hit
-            case GeneratorType::ChamberVII:return shaped(.38f,.88f,.60f); // MARROW: exciter snap
-            case GeneratorType::ChamberVIII:return shaped(1.72f,.04f,1.02f); // ABYSS: inertia
-            case GeneratorType::ChamberIX:return shaped(.30f,.96f,.58f); // POLTERGEIST: discharge
-            case GeneratorType::ChamberX:return shaped(1.38f,.16f,.94f); // VORTEX: spin-up
-            default:break;
-        }
-    }else{
-        switch(type){
-            case GeneratorType::ChamberI:return shaped(.40f,.80f,.66f); // BELL GLASS: strike
-            case GeneratorType::ChamberII:return shaped(.58f,.52f,.78f); // SPIRE: bright attack
-            case GeneratorType::ChamberIII:return shaped(.66f,.38f,.84f); // ASTRAL FM
-            case GeneratorType::ChamberIV:return shaped(.92f,.22f,.90f); // PRISM
-            case GeneratorType::ChamberV:return shaped(1.32f,.08f,.98f); // RELIQUARY
-            case GeneratorType::ChamberVI:return shaped(2.05f,.01f,1.04f); // CHOIR: slow body
-            case GeneratorType::ChamberVII:return shaped(1.12f,.10f,.96f); // ORRERY
-            case GeneratorType::ChamberVIII:return shaped(.76f,.44f,.82f); // MIRROR: reflected onset
-            case GeneratorType::ChamberIX:return shaped(2.30f,.01f,1.06f); // AURORA: long bloom
-            case GeneratorType::ChamberX:return shaped(1.58f,.12f,.98f); // SIREN: pressure catches
-            default:break;
-        }
-    }
-    return e;
+    const float body=std::pow(e,contract.articulationPower);
+    const float transient=contract.transientBoost*hit*(1.f-.35f*e);
+    const float morphAccent=.90f+.18f*std::pow(juce::jlimit(0.f,1.f,sh),contract.morphCurve);
+    return body*juce::jlimit(.22f,1.60f,(contract.sustainBias+transient)*morphAccent);
 };
 // CREATURE CONTRACTS: TYPE is the monster; MORPH is its transformation arc.
 // Each contract owns a different spectral/nonlinear motion.  These are deliberately
@@ -204,57 +165,31 @@ auto creatureContract=[&](GeneratorType type,float y,float phase,float sh,float 
     }
     return y;
 };
+float familyStereoSide=0.f;
 auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float freq){
     if(!gen.enabled||gen.level<=0.f)return 0.f;
-    float y=signatureOsc(slot,gen,phase,sh,freq);
-    y=creatureContract(gen.type,y,phase,sh,freq);
+    const auto& contract=synthesis_contract::get(gen.type,isCrypt);
+    const float familyMorph=std::pow(juce::jlimit(0.f,1.f,sh),contract.morphCurve);
 
-    // FAMILY CLARITY: a tiny per-slot high-frequency recovery stage keeps FM,
-    // wavetable, granular, spectral and struck creatures crisp before the shared
-    // Castle filtering. Heavy bodies deliberately receive much less recovery.
-    float clarity=.06f;
-    switch(gen.type){
-        case GeneratorType::VA: clarity=.09f; break;
-        case GeneratorType::Wavetable: clarity=.15f; break;
-        case GeneratorType::FM: clarity=.22f; break;
-        case GeneratorType::PM: clarity=.20f; break;
-        case GeneratorType::Vector: clarity=.12f; break;
-        case GeneratorType::Chip: clarity=.24f; break;
-        case GeneratorType::Noise: clarity=.10f; break;
-        case GeneratorType::Resonator: clarity=.08f; break;
-        default:
-            if(isCrypt){
-                switch(gen.type){
-                    case GeneratorType::ChamberII: clarity=.14f; break; // spectral corpse
-                    case GeneratorType::ChamberIII: clarity=.18f; break; // bone
-                    case GeneratorType::ChamberV: clarity=.11f; break; // wraith
-                    case GeneratorType::ChamberVIII: clarity=.02f; break; // abyss keeps weight
-                    case GeneratorType::ChamberIX: clarity=.24f; break; // sparks
-                    case GeneratorType::ChamberX: clarity=.08f; break; // fluid
-                    default: clarity=.06f; break;
-                }
-            }else{
-                switch(gen.type){
-                    case GeneratorType::ChamberI: clarity=.18f; break; // bell glass
-                    case GeneratorType::ChamberII: clarity=.25f; break; // spire
-                    case GeneratorType::ChamberIII: clarity=.22f; break; // astral FM
-                    case GeneratorType::ChamberIV: clarity=.26f; break; // granular prism
-                    case GeneratorType::ChamberVI: clarity=.10f; break; // choir
-                    case GeneratorType::ChamberVIII: clarity=.20f; break; // mirror
-                    case GeneratorType::ChamberIX: clarity=.15f; break; // aurora
-                    case GeneratorType::ChamberX: clarity=.17f; break; // siren
-                    default: clarity=.09f; break;
-                }
-            }
-            break;
-    }
+    float y=signatureOsc(slot,gen,phase,familyMorph,freq);
+    y=creatureContract(gen.type,y,phase,familyMorph,freq);
+
+    // The contract owns clarity and nonlinearity, so family identity survives
+    // shared Castle processing without adding another user control.
     float& memory=isCrypt?v.cryptCreatureMemory[(size_t)slot]:v.towerCreatureMemory[(size_t)slot];
-    const float alpha=.10f+.16f*(1.f-sh);
+    const float alpha=.08f+.18f*(1.f-familyMorph);
     memory+=alpha*(y-memory);
     const float edge=y-memory;
-    y=std::tanh(y+edge*clarity*(1.0f+1.35f*sh));
+    y=std::tanh((y+edge*contract.clarity*(1.0f+1.35f*familyMorph))
+                *(1.0f+.18f*contract.nonlinearDrive*familyMorph));
 
-    const float art=articulationFor(gen.type,sh);
+    // Stereo is also a declared family law. Keep it subtle here: the later
+    // room-pan stage remains in charge of placement, while this creates motion
+    // characteristic of the synthesis family itself.
+    const float stereoPhase=T*(wander*(.37f+.63f*contract.stereoMotion)+phase*.17f);
+    familyStereoSide+=y*std::sin(stereoPhase+slot*.91f)*contract.stereoMotion*.11f*gen.level;
+
+    const float art=articulationFor(gen.type,familyMorph);
     return y*art*gen.level;
 };
 const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/12.f); float x=0;
@@ -262,7 +197,7 @@ x+=renderSlot(0,g[0],v.pa,shapeA,fA);x+=renderSlot(1,g[1],v.pb,shapeB,fB);x+=ren
 x*=.42f;if(s.voice.noise.enabled)x+=rnd()*s.voice.noise.level*.2f*juce::jlimit(0.f,1.f,v.amp.value);
 FilterCell fa=s.voice.filters[0],fb=s.voice.filters[1];fa.cutoff=juce::jlimit(.002f,.48f,fa.cutoff+sceneCut*.20f);fb.cutoff=juce::jlimit(.002f,.48f,fb.cutoff+sceneCut*.16f);fa.drive=juce::jlimit(0.f,1.f,fa.drive+sceneDrive);fb.drive=juce::jlimit(0.f,1.f,fb.drive+sceneDrive);
 float& za=isCrypt?v.cfa:v.tfa;float& zb=isCrypt?v.cfb:v.tfb;float a=filter(x,za,fa,mod),b=filter(x,zb,fb,mod*.7f);if(s.voice.filterRoute==Route::Parallel)x=.5f*(a+b);else if(s.voice.filterRoute==Route::Crossfeed)x=.65f*a+.35f*b;else if(s.voice.filterRoute==Route::Split)x=.78f*a+.22f*b;else x=filter(a,zb,fb,mod*.7f);
-float stereoSide=0.f;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
+float stereoSide=familyStereoSide;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
 else{const float bellA=(f*2.41421356f<sr*.46f)?std::sin(T*v.towerBellPhaseA):0.f,bellB=(f*3.73205081f<sr*.46f)?std::sin(T*v.towerBellPhaseB+.37f):0.f,celestial=bellA*(.08f+.30f*character)+bellB*(.03f+.17f*character),alpha=1.f-std::exp(-T*2500.f/(float)sr);v.towerBody+=alpha*(x-v.towerBody);const float air=x-v.towerBody;x=std::tanh(x*(.78f-.20f*character)+air*(.14f+.48f*character)+celestial);stereoSide=(bellA-bellB)*(.015f+.11f*character);}
 // Generator-local articulation already owns the amplitude contour. Keep only
 // velocity and room gain here so downstream processing cannot homogenize species.
