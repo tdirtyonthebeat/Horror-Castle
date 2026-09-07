@@ -190,7 +190,10 @@ auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float
     familyStereoSide+=y*std::sin(stereoPhase+slot*.91f)*contract.stereoMotion*.11f*gen.level;
 
     const float art=articulationFor(gen.type,familyMorph);
-    return y*art*gen.level;
+    const float rendered=y*art*gen.level;
+    auto& peak=isCrypt?v.cryptCreatureBlockPeak[(size_t)slot]:v.towerCreatureBlockPeak[(size_t)slot];
+    peak=std::max(peak,std::abs(rendered));
+    return rendered;
 };
 const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/12.f); float x=0;
 x+=renderSlot(0,g[0],v.pa,shapeA,fA);x+=renderSlot(1,g[1],v.pb,shapeB,fB);x+=renderSlot(2,g[2],v.pc,shapeC,fC);
