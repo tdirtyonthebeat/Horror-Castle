@@ -9,6 +9,8 @@ void CastleEngine::render(juce::AudioBuffer<float>& b, juce::MidiBuffer& m)
     b.clear(); juce::MidiBuffer performanceMidi; rituals.process(m, performanceMidi, b.getNumSamples()); auto midiIt=performanceMidi.begin(); const auto midiEnd=performanceMidi.end();
     auto* L=b.getWritePointer(0); auto* R=b.getNumChannels()>1?b.getWritePointer(1):nullptr; delay.setDelay(delayTimeSamples);
     std::array<float, CurseMatrix::Lanes> lanePeak{}; std::array<float, CurseMatrix::Destinations> destinationPeak{}; std::array<float,EcologyMeterCount> ecologyPeak{};
+    for(auto& v:voices){v.cryptCreatureBlockPeak.fill(0.f);v.towerCreatureBlockPeak.fill(0.f);}
+    std::array<float,3> cryptCreaturePeak{},towerCreaturePeak{};
     for(int n=0;n<b.getNumSamples();++n){
         while(midiIt!=midiEnd&&(*midiIt).samplePosition<=n){const auto meta=*midiIt;const auto msg=meta.getMessage();if(msg.isNoteOn())on(msg.getNoteNumber(),msg.getVelocity());else if(msg.isNoteOff())off(msg.getNoteNumber());else if(msg.isPitchWheel())pitchBendSemitones=((float)msg.getPitchWheelValue()-8192.f)/8192.f*2.f;else if(msg.isController()&&msg.getControllerNumber()==1)modWheel=juce::jlimit(0.f,1.f,msg.getControllerValue()/127.f);else if(msg.isChannelPressure())channelPressure=juce::jlimit(0.f,1.f,msg.getChannelPressureValue()/127.f);else if(msg.isAftertouch()){const int note=msg.getNoteNumber();const float pressure=juce::jlimit(0.f,1.f,msg.getAfterTouchValue()/127.f);for(auto&voice:voices)if(voice.active&&voice.note==note)voice.polyPressure=pressure;}else if(msg.isAllNotesOff()||msg.isAllSoundOff())reset();++midiIt;}
         float cryptL=0,cryptR=0,towerL=0,towerR=0; std::array<float,CurseMatrix::Destinations> busHex{}; int activeVoices=0;
@@ -32,6 +34,16 @@ void CastleEngine::render(juce::AudioBuffer<float>& b, juce::MidiBuffer& m)
         const float ritualAccent=rituals.getIntensityMod()*.18f+std::abs(ritualCurse)*.08f;float ritualL=0,ritualR=0;ritual.processSample(possessedCL,possessedCR,possessedTL,possessedTR,busHex[7],busHex[13],busHex[14]+ritualAccent,busHex[15],ritualL,ritualR);
         const float graveMod=busHex[8],effectiveDelayFeedback=juce::jlimit(0.f,.95f,delayFeedback+busHex[21]*.22f);const float dl=delay.popSample(0),dr=delay.popSample(1);delay.pushSample(0,ritualL+dr*effectiveDelayFeedback);delay.pushSample(1,ritualR+dl*effectiveDelayFeedback);const float outL=ritualL+dl*delayMix,outR=ritualR+dr*delayMix;
         const float graveTone01=juce::jlimit(0.f,1.f,(graveTone-.02f)/.46f+busHex[16]*.32f);grave.setParameters(juce::jlimit(0.f,1.f,patch.graveDepth+graveMod*.28f),graveTone01,ritualParams.width);float graveWetL=0,graveWetR=0;grave.processSample(outL,outR,graveWetL,graveWetR);const float graveMix=juce::jlimit(0.f,1.f,patch.graveDepth+graveMod*.45f),graveDry=1.f-.32f*graveMix;L[n]=clip((outL*graveDry+graveWetL*graveMix)*master);if(R)R[n]=clip((outR*graveDry+graveWetR*graveMix)*master);
+    }
+    for(const auto& v:voices)for(int i=0;i<3;++i){
+        cryptCreaturePeak[(size_t)i]=std::max(cryptCreaturePeak[(size_t)i],v.cryptCreatureBlockPeak[(size_t)i]);
+        towerCreaturePeak[(size_t)i]=std::max(towerCreaturePeak[(size_t)i],v.towerCreatureBlockPeak[(size_t)i]);
+    }
+    for(int i=0;i<3;++i){
+        const float prevC=cryptCreatureTelemetry[(size_t)i].load(std::memory_order_relaxed);
+        const float prevT=towerCreatureTelemetry[(size_t)i].load(std::memory_order_relaxed);
+        cryptCreatureTelemetry[(size_t)i].store(juce::jlimit(0.f,1.f,std::max(cryptCreaturePeak[(size_t)i],prevC*.72f)),std::memory_order_relaxed);
+        towerCreatureTelemetry[(size_t)i].store(juce::jlimit(0.f,1.f,std::max(towerCreaturePeak[(size_t)i],prevT*.72f)),std::memory_order_relaxed);
     }
     for(int i=0;i<CurseMatrix::Lanes;++i)hexLaneTelemetry[(size_t)i].store(juce::jlimit(0.f,1.f,lanePeak[(size_t)i]),std::memory_order_relaxed);for(int d=0;d<CurseMatrix::Destinations;++d)hexDestinationTelemetry[(size_t)d].store(juce::jlimit(0.f,1.f,destinationPeak[(size_t)d]),std::memory_order_relaxed);for(int i=0;i<EcologyMeterCount;++i)ecologyTelemetry[(size_t)i].store(juce::jlimit(0.f,1.f,ecologyPeak[(size_t)i]),std::memory_order_relaxed);
 }
