@@ -12,7 +12,10 @@ float VortexEngine::renderSample(VoiceState& s,float fundamentalHz,float turbule
 
     // Turbulence now changes the *topology* of the fluid interaction: low values
     // are coherent rotating cells, high values shed asymmetric vortices and burst.
-    const float drive=(0.10f+0.90f*expression)*(0.20f+0.80f*velocity);
+    // Expression is physical pressure, not a post-gain. It must alter the fluid
+    // regime enough to be audible even before a collapse occurs.
+    const float drive=(0.08f+1.12f*expression)*(0.20f+0.80f*velocity);
+    const float expressionPressure=expression*expression;
     const float turbulence2=turbulence*turbulence;
     const float hiss=noise(s.rng)*(0.002f+0.075f*turbulence2)*drive;
     const float memory=0.952f+0.040f*dread;
@@ -28,9 +31,11 @@ float VortexEngine::renderSample(VoiceState& s,float fundamentalHz,float turbule
         const float forcing=hiss
                           + chaotic*(0.0015f+0.026f*turbulence2)
                           + s.cavity*(0.001f+0.014f*dread)
-                          + gradient*(0.002f+0.008f*turbulence);
+                          + gradient*(0.002f+0.008f*turbulence)
+                          + expressionPressure*(0.0015f+0.0060f*ratios[(size_t)i]);
         c.flow=std::tanh(c.flow*memory + forcing - c.pressure*(0.010f+0.025f*(1.0f-dread)));
-        c.pressure=std::tanh(c.pressure*(0.967f+0.025f*dread)+c.flow*(0.016f+0.043f*drive));
+        c.pressure=std::tanh(c.pressure*(0.967f+0.025f*dread)+c.flow*(0.016f+0.052f*drive)
+                             + expressionPressure*(0.0008f+0.0016f*i));
         c.vortex=std::tanh(c.vortex*(0.88f+0.10f*dread)+(c.flow-prev.flow)*(0.10f+0.66f*turbulence2)+gradient*0.05f);
         const float shedding=1.0f+(0.22f*turbulence2*((i&1)?-1.0f:1.0f)) + 0.12f*c.vortex;
         const float shed=fundamentalHz*ratios[(size_t)i]*juce::jlimit(0.55f,1.55f,shedding);
@@ -47,13 +52,20 @@ float VortexEngine::renderSample(VoiceState& s,float fundamentalHz,float turbule
     pressureMean*=0.25f;
     motionMean*=0.25f;
     vortexMean*=0.25f;
-    const float threshold=.64f-.31f*dread-.08f*turbulence2;
-    const float collapseDrive=std::max(0.0f,std::abs(pressureMean)-threshold);
+    // Collapse threshold follows dread, turbulence and performed pressure. This
+    // guarantees that an extreme VORTEX actually crosses into the event regime.
+    const float threshold=.46f-.22f*dread-.10f*turbulence2-.12f*expressionPressure;
+    const float collapseDrive=std::max(0.0f,std::abs(pressureMean)-threshold)
+                              + std::max(0.0f,motionMean-(.055f-.025f*turbulence2))
+                                *(.18f+.42f*expressionPressure);
     s.collapse=0.982f*s.collapse+collapseDrive*(0.07f+0.34f*turbulence2);
     s.cavity=std::tanh(s.cavity*(0.969f+0.024f*dread)+pressureMean*(0.014f+0.060f*dread)-s.collapse*pressureMean*(0.12f+0.14f*dread));
     const float burst=noise(s.rng)*s.collapse*(0.015f+0.13f*dread+0.06f*turbulence2);
     const float implosion=std::tanh(-pressureMean*s.collapse*(0.20f+0.65f*dread));
-    const float out=sum*0.38f+s.cavity*(0.18f+0.38f*dread)+burst+implosion;
+    const float pressureVoice=std::sin(juce::MathConstants<float>::twoPi*s.cells[0].phase
+                                      +pressureMean*(1.5f+5.0f*expressionPressure))
+                              *(.015f+.075f*expressionPressure);
+    const float out=sum*(0.34f+.10f*expression)+s.cavity*(0.18f+0.38f*dread)+burst+implosion+pressureVoice;
     if(!std::isfinite(out)){ s=VoiceState{}; return 0.0f; }
 
     auto& bus=s.creatureState;
