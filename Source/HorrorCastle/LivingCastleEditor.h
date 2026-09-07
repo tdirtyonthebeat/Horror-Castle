@@ -4,6 +4,7 @@
 #include "../UI/LivingCastleChrome.h"
 #include "../UI/LivingEngineMacroPanel.h"
 #include "../UI/NecromancerVisuals.h"
+#include "../UI/CreaturePedestalComponent.h"
 #include <cmath>
 
 namespace horrorcastle {
@@ -15,12 +16,19 @@ class LivingCastleEditor final : public HorrorCastleEditor
 {
 public:
     explicit LivingCastleEditor(HorrorCastleProcessor& p)
-        : HorrorCastleEditor(p), chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
+        : HorrorCastleEditor(p), pedestals{{
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",1),
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",2),
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",3),
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",1),
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",2),
+            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",3)}}, chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
     {
         addAndMakeVisible(chrome);
         chrome.toBack();
         addAndMakeVisible(creaturePortrait);
         addAndMakeVisible(soulGlass);
+        for(auto& pedestal:pedestals)addAndMakeVisible(*pedestal);
 
         flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
         flowTitle.setJustificationType(juce::Justification::centred);
@@ -105,11 +113,15 @@ public:
         // The lower left is now the summoned creature, not a decorative book.
         // Soul Glass sits between the creature and the right-hand Grimoire,
         // preserving the reference composition while making the sound visible.
+        // Six ritual pedestals replace the old generator strips in Performance.
+        for(int i=0;i<3;++i)pedestals[(size_t)i]->setBounds(bounds(138+i*128,112,118,292));
+        for(int i=0;i<3;++i)pedestals[(size_t)(i+3)]->setBounds(bounds(824+i*128,112,118,292));
         creaturePortrait.setBounds(bounds(24,805,400,245));
         soulGlass.setBounds(bounds(438,805,390,245));
     }
 
 private:
+    std::array<std::unique_ptr<CreaturePedestalComponent>,6> pedestals;
     LivingCastleChrome chrome;
     LivingEngineMacroPanel physics;
     NervousSystemComponent nervousSystem;
