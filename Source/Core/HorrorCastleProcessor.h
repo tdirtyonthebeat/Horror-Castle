@@ -45,6 +45,7 @@ public:
     float getHexLaneActivity(int index) const noexcept { return engine.getHexLaneActivity(index); }
     float getHexDestinationValue(int index) const noexcept { return engine.getHexDestinationValue(index); }
     float getEcologyMeter(int index) const noexcept { return engine.getEcologyMeter(index); }
+    void copySoulGlass(std::array<float,512>& wave, std::array<float,64>& spectrum, float& width) const noexcept;
 
     juce::StringArray getFactoryPresetNames() const { return grimoire.getFactoryNames(); }
     std::vector<Grimoire::SpellInfo> getFactoryPresetSpells() const { return grimoire.getFactorySpells(); }
@@ -57,6 +58,10 @@ private:
     juce::AudioProcessorValueTreeState parameters;
     CastleEngine engine;
     Grimoire grimoire;
+    std::array<std::atomic<float>,512> soulWave{};
+    std::array<std::atomic<float>,64> soulSpectrum{};
+    std::atomic<float> soulWidth{0.f};
+    size_t soulWrite=0;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HorrorCastleProcessor)
 };
