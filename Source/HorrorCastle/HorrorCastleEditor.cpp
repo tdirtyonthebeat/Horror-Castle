@@ -360,6 +360,7 @@ HorrorCastleEditor::~HorrorCastleEditor()
 void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
 {
     auto setControlVisible=[&](Control& c){if(c.label)c.label->setVisible(show);if(c.slider)c.slider->setVisible(show);};
+    auto hideMain=[&](Control& c){if(c.label)c.label->setVisible(false);if(c.slider)c.slider->setVisible(false);};
     for(auto* c:{&corpsePosition,&corpseRot,&corpseFormant,&corpseInharmonic,
                   &crypt.f1Drive,&crypt.f2Drive,&tower.f1Drive,&tower.f2Drive,
                   &crypt.genTune[0],&crypt.genTune[1],&crypt.genTune[2],
@@ -384,6 +385,12 @@ void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
     // preset-compatible, but lives behind UNDERCROFT / DEEP EDIT.
     for(auto* c:{&ritualDepth,&ritualDrive,&graveDelay,&graveTone,&graveOutput})
         setControlVisible(*c);
+
+    // Main-page essentials remain visible in both modes; secondary controls
+    // disappear on load and return only when the user explicitly asks for depth.
+    if(!show)
+        for(auto* c:{&ritualDepth,&ritualDrive,&graveDelay,&graveTone,&graveOutput})
+            hideMain(*c);
 
     for(auto* l:{&undercroftTitle,&corpseTitle,&corpseStatus,&advancedCryptTitle,&advancedTowerTitle,&possessionTitle,&ritualsTitle})
         l->setVisible(show);
