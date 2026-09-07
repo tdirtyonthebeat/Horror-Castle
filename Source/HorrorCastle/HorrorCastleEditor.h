@@ -28,8 +28,11 @@ public:
     ~HorrorCastleEditor() override;
     void paint(juce::Graphics&) override;
     void resized() override;
-
+protected:
+    void setPerformanceMode(bool simplified);
+    void openGrimoire() { setGrimoireVisible(true); }
 private:
+
     struct Control : juce::Component {
         std::unique_ptr<juce::Label> label;
         std::unique_ptr<juce::Slider> slider;
