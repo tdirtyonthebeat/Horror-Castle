@@ -56,6 +56,9 @@ private:
   float cryptSubPhase=0, cryptAbyssPhase=0;
   float towerBellPhaseA=0, towerBellPhaseB=0;
   std::array<float,3> cryptAux1{}, cryptAux2{};
+  // Per-slot one-sample memories let each synthesis family own a tiny
+  // clarity/edge stage without sharing a homogenising global processor.
+  std::array<float,3> cryptCreatureMemory{}, towerCreatureMemory{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
   std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
