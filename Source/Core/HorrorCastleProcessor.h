@@ -45,6 +45,7 @@ public:
     float getHexLaneActivity(int index) const noexcept { return engine.getHexLaneActivity(index); }
     float getHexDestinationValue(int index) const noexcept { return engine.getHexDestinationValue(index); }
     float getEcologyMeter(int index) const noexcept { return engine.getEcologyMeter(index); }
+    float getCreatureEnergy(bool crypt,int slot) const noexcept { return engine.getCreatureEnergy(crypt,slot); }
     void copySoulGlass(std::array<float,512>& wave, std::array<float,64>& spectrum, float& width) const noexcept;
 
     juce::StringArray getFactoryPresetNames() const { return grimoire.getFactoryNames(); }
