@@ -27,6 +27,10 @@ require('nearest generator fingerprint distance' in signature and 'MORPH audibly
 scene=text('Source/HorrorCastle/CastleEngineScene.cpp')
 require('CREATURE CONTRACTS' in scene and 'creatureContract' in scene,'creature-contract DSP layer missing')
 require('creature-contract spread' in signature and 'creatures differ in articulation' in signature,'creature-contract dynamic regression missing')
+chrome=text('Source/UI/LivingCastleChrome.h')
+require('Granular / Refraction' in chrome and 'Spectral Resynthesis' in chrome and 'VA / Subtractive' in chrome,'synthesis-family identities missing from engine cards')
+require('oscillator-granular creature' in scene and 'FAMILY CLARITY' in scene,'granular/family-clarity DSP pass missing')
+require('Additive and granular families remain clearly distinct' in signature and 'Granular and spectral-resynthesis families remain clearly distinct' in signature,'synthesis-family regression coverage missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
  if f.is_file() and f.suffix in{'.h','.cpp','.c','.mm'}:
@@ -44,4 +48,5 @@ print('PASS  deterministic archetypes scale bank without switch-case explosion')
 print('PASS  dedicated factory-preset QA target is compiled in CI')
 print('PASS  simplified TYPE + LEVEL + MORPH main workflow')
 print('PASS  every generator is fingerprint-gated for audible distinction')
+print('PASS  subtractive / wavetable / FM / additive / granular / resynthesis families are explicitly separated')
 print('PASS  independent release Source/ naming scan')
