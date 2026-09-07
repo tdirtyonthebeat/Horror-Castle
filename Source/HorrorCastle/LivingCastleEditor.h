@@ -31,10 +31,13 @@ public:
         for(auto& pedestal:pedestals)addAndMakeVisible(*pedestal);
         for(auto& pedestal:pedestals)pedestal->onFocus=[this](bool crypt,int type,int slot){
             focusedCrypt=crypt;focusedType=type;focusedSlot=slot;
+            for(auto& p:pedestals)p->setFocused(false);
+            pedestals[(size_t)((crypt?0:3)+slot)]->setFocused(true);
             creaturePortrait.focusCreature(crypt,type);
             soulGlass.focusCreature(crypt,type);
             showGrimoireCreatureGuide(crypt,type);
         };
+        pedestals[0]->setFocused(true);
 
         flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
         flowTitle.setJustificationType(juce::Justification::centred);
