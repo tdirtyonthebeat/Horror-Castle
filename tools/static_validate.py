@@ -24,6 +24,9 @@ require(all(x in editor for x in ['&ritualDepth','&ritualDrive','&graveDelay','&
 require('DEEP EDIT' in living,'Living Physics not presented as optional deep edit')
 require('&crypt.genTune[0]' in editor and '&tower.genTune[0]' in editor,'technical tuning controls not moved behind UNDERCROFT')
 require('nearest generator fingerprint distance' in signature and 'MORPH audibly changes every CRYPT generator' in signature,'all-generator fingerprint regression missing')
+scene=text('Source/HorrorCastle/CastleEngineScene.cpp')
+require('CREATURE CONTRACTS' in scene and 'creatureContract' in scene,'creature-contract DSP layer missing')
+require('creature-contract spread' in signature and 'creatures differ in articulation' in signature,'creature-contract dynamic regression missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
  if f.is_file() and f.suffix in{'.h','.cpp','.c','.mm'}:
