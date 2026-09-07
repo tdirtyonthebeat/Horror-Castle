@@ -40,7 +40,7 @@ public:
         float spectralPeak=1.0e-6f;
         for(size_t k=0;k<bins.size();++k){double re=0.0,im=0.0;const double omega=juce::MathConstants<double>::twoPi*(double)(k+1)/(double)wave.size();for(size_t n=0;n<wave.size();++n){const double win=.5-.5*std::cos(juce::MathConstants<double>::twoPi*(double)n/(double)(wave.size()-1));const double a=omega*(double)n;re+=wave[n]*win*std::cos(a);im-=wave[n]*win*std::sin(a);}bins[k]=(float)std::sqrt(re*re+im*im);spectralPeak=std::max(spectralPeak,bins[k]);}
         for(auto& b:bins)b=juce::jlimit(0.f,1.f,b/spectralPeak);
-        const auto identity=dominantIdentity();
+        const auto identity=focusedIdentity();
         const auto& contract=synthesis_contract::get(static_cast<GeneratorType>(identity.second),identity.first);
 
         juce::Path p; const float mid=scope.getCentreY(),amp=scope.getHeight()*.42f;
@@ -69,6 +69,12 @@ public:
     }
 private:
     float read(const juce::String& id,float fallback=0.f) const {if(auto* p=state.getRawParameterValue(id))return p->load();return fallback;}
+    std::pair<bool,int> focusedIdentity() const {
+        // Follow the last creature selector the Necromancer touched. This makes
+        // auditioning deterministic; fall back to the loudest active creature.
+        if(focusValid)return {focusCrypt,focusType};
+        return dominantIdentity();
+    }
     std::pair<bool,int> dominantIdentity() const {
         bool bestCrypt=true; int bestType=0; float best=-1.f;
         for(bool crypt:{true,false}){const char* s=crypt?"crypt":"tower";for(int i=1;i<=3;++i){
@@ -110,9 +116,15 @@ private:
         }
         juce::ignoreUnused(wave,width);
     }
-    void timerCallback() override { repaint(); }
+    void timerCallback() override {
+        // Detect selector changes without coupling UI components together.
+        for(bool crypt:{true,false}){const char* s=crypt?"crypt":"tower";for(int i=1;i<=3;++i){const int key=(crypt?0:3)+(i-1);const int t=juce::jlimit(0,17,(int)std::lround(read(param::id(s,i,"type"))));if(lastTypes[(size_t)key]>=0&&lastTypes[(size_t)key]!=t){focusCrypt=crypt;focusType=t;focusValid=true;}lastTypes[(size_t)key]=t;}}
+        repaint();
+    }
     HorrorCastleProcessor& processor;
     juce::AudioProcessorValueTreeState& state;
+    std::array<int,6> lastTypes{{-1,-1,-1,-1,-1,-1}};
+    bool focusValid=false,focusCrypt=true; int focusType=0;
 };
 
 class CreaturePortraitComponent final : public juce::Component, private juce::Timer
