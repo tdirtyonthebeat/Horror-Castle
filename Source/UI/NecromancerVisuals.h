@@ -13,7 +13,7 @@ namespace horrorcastle {
 class SoulGlassComponent final : public juce::Component, private juce::Timer
 {
 public:
-    explicit SoulGlassComponent(HorrorCastleProcessor& p) : processor(p)
+    explicit SoulGlassComponent(HorrorCastleProcessor& p) : processor(p), state(p.getParameterState())
     {
         setInterceptsMouseClicks(false,false);
         startTimerHz(30);
@@ -34,6 +34,8 @@ public:
 
         std::array<float,512> wave{}; std::array<float,64> bins{}; float width=0.f;
         processor.copySoulGlass(wave,bins,width);
+        const auto identity=dominantIdentity();
+        const auto& contract=synthesis_contract::get(static_cast<GeneratorType>(identity.second),identity.first);
 
         juce::Path p; const float mid=scope.getCentreY(),amp=scope.getHeight()*.42f;
         for(size_t i=0;i<wave.size();++i){
@@ -53,10 +55,58 @@ public:
         g.setColour(juce::Colour(0xffb58bd0).withAlpha(.22f));g.fillEllipse(cx-18.f*width,cy-5.f,36.f*width,10.f);
         g.setColour(juce::Colour(0xffd3c5ad).withAlpha(.70f));g.setFont(juce::FontOptions(8.f));
         g.drawText("WIDTH",juce::Rectangle<float>(cx-24,cy+7,48,10).toNearestInt(),juce::Justification::centred);
+
+        // FAMILY LENS: the same audio telemetry is interpreted according to the
+        // synthesis law. No fake animation: every glyph is anchored to waveform,
+        // spectral energy, stereo width, MORPH or live ecology telemetry.
+        drawFamilyLens(g,spectrum,wave,bins,width,identity.first,identity.second,contract);
     }
 private:
+    float read(const juce::String& id,float fallback=0.f) const {if(auto* p=state.getRawParameterValue(id))return p->load();return fallback;}
+    std::pair<bool,int> dominantIdentity() const {
+        bool bestCrypt=true; int bestType=0; float best=-1.f;
+        for(bool crypt:{true,false}){const char* s=crypt?"crypt":"tower";for(int i=1;i<=3;++i){
+            const float level=read(param::id(s,i,"level"))*(read(param::id(s,i,"enabled"))>.5f);
+            if(level>best){best=level;bestCrypt=crypt;bestType=juce::jlimit(0,17,(int)std::lround(read(param::id(s,i,"type"))));}
+        }}
+        return {bestCrypt,bestType};
+    }
+    static float bandEnergy(const std::array<float,64>& b,int a,int z){float e=0.f;for(int i=a;i<z;++i)e+=b[(size_t)i];return e/std::max(1,z-a);}
+    void drawFamilyLens(juce::Graphics& g,juce::Rectangle<float> r,const std::array<float,512>& wave,
+                        const std::array<float,64>& bins,float width,bool crypt,int type,const SynthesisFamilyContract& contract) const {
+        const auto accent=crypt?juce::Colour(0xffc65b55):juce::Colour(0xffaa7ac8);
+        const float low=bandEnergy(bins,0,16),mid=bandEnergy(bins,16,40),high=bandEnergy(bins,40,64);
+        const float morph=read(param::id(crypt?"crypt":"tower",1,"shape"),.5f);
+        auto lens=r.reduced(3); lens.removeFromTop(3);
+        g.setColour(accent.withAlpha(.76f));g.setFont(juce::FontOptions(7.8f));
+        g.drawFittedText(juce::String("LENS // ")+contract.family+" // "+contract.spectralMotion,
+                         lens.removeFromTop(12).toNearestInt(),juce::Justification::centredLeft,1);
+
+        const auto gt=static_cast<GeneratorType>(type);
+        if(gt==GeneratorType::FM||gt==GeneratorType::PM||(!crypt&&gt==GeneratorType::ChamberIII)){
+            // Operator/sideband constellation.
+            const auto c=lens.getCentre(); const float rad=7.f+18.f*juce::jlimit(0.f,1.f,high+mid);
+            for(int i=0;i<6;++i){const float a=juce::MathConstants<float>::twoPi*i/6.f+morph;const float rr=rad*(.45f+.55f*bins[(size_t)(8+i*7)]);g.setColour(accent.withAlpha(.25f+.5f*bins[(size_t)(8+i*7)]));g.fillEllipse(c.x+std::cos(a)*rr-2,c.y+std::sin(a)*rr-2,4,4);}
+            g.setColour(accent.withAlpha(.65f));g.drawEllipse(c.x-rad,c.y-rad,2*rad,2*rad,.7f);
+        } else if((!crypt&&gt==GeneratorType::ChamberIV)){
+            // Grain cloud: density comes from high-frequency/temporal activity.
+            for(int i=0;i<18;++i){const float e=bins[(size_t)((i*11)%64)];const float x=lens.getX()+std::fmod(i*.6180339f,1.f)*lens.getWidth();const float y=lens.getY()+std::fmod(i*.4142135f+e,1.f)*lens.getHeight();g.setColour(accent.withAlpha(.12f+.62f*e));g.fillEllipse(x,y,1.5f+4.f*e,1.5f+4.f*e);}
+        } else if((crypt&&gt==GeneratorType::ChamberII)||(!crypt&&gt==GeneratorType::ChamberVIII)){
+            // Spectral partial pillars / reflected frames.
+            for(int i=0;i<12;++i){const float e=bins[(size_t)(3+i*5)];const float x=lens.getX()+i*lens.getWidth()/12.f;g.setColour(accent.withAlpha(.16f+.58f*e));g.drawLine(x,lens.getCentreY()-e*22.f,x,lens.getCentreY()+e*22.f,.8f);}
+        } else if((crypt&&gt==GeneratorType::ChamberX)||(!crypt&&gt==GeneratorType::ChamberX)){
+            // Physical flow/jet: ecology pressure/event bends stream lines.
+            const float ecology=crypt?processor.getEcologyMeter(CastleEngine::VortexEvent):processor.getEcologyMeter(CastleEngine::SirenPressure);
+            for(int i=0;i<3;++i){juce::Path p;for(int x=0;x<48;++x){const float xx=lens.getX()+lens.getWidth()*x/47.f;const float yy=lens.getCentreY()+(i-1)*8.f+std::sin(x*.28f+i+ecology*5.f)*ecology*10.f;if(x==0)p.startNewSubPath(xx,yy);else p.lineTo(xx,yy);}g.setColour(accent.withAlpha(.25f+.45f*ecology));g.strokePath(p,juce::PathStrokeType(.8f));}
+        } else {
+            // Universal harmonic/body map for VA, additive, modal and hybrids.
+            const float vals[3]={low,mid,high};for(int i=0;i<3;++i){auto b=lens.removeFromLeft(lens.getWidth()/(3-i));b=b.reduced(3);const float h=b.getHeight()*juce::jlimit(0.f,1.f,vals[i]);g.setColour(accent.withAlpha(.18f+.55f*vals[i]));g.fillRoundedRectangle(b.withTop(b.getBottom()-h),2.f);}
+        }
+        juce::ignoreUnused(wave,width);
+    }
     void timerCallback() override { repaint(); }
     HorrorCastleProcessor& processor;
+    juce::AudioProcessorValueTreeState& state;
 };
 
 class CreaturePortraitComponent final : public juce::Component, private juce::Timer
