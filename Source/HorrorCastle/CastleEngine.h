@@ -35,6 +35,10 @@ public:
  float getHexLaneActivity(int index) const noexcept { return (index >= 0 && index < CurseMatrix::Lanes) ? hexLaneTelemetry[(size_t)index].load(std::memory_order_relaxed) : 0.f; }
  float getHexDestinationValue(int index) const noexcept { return (index >= 0 && index < CurseMatrix::Destinations) ? hexDestinationTelemetry[(size_t)index].load(std::memory_order_relaxed) : 0.f; }
  float getEcologyMeter(int index) const noexcept { return (index>=0&&index<EcologyMeterCount)?ecologyTelemetry[(size_t)index].load(std::memory_order_relaxed):0.f; }
+ float getCreatureEnergy(bool crypt,int slot) const noexcept {
+  if(slot<0||slot>=3)return 0.f;
+  return (crypt?cryptCreatureTelemetry[(size_t)slot]:towerCreatureTelemetry[(size_t)slot]).load(std::memory_order_relaxed);
+ }
 private:
  enum CreatureEndpoint : std::uint8_t { VortexCreature=0, SirenCreature=1, PoltergeistCreature=2, AuroraCreature=3 };
  struct LivingPhysics {
@@ -59,6 +63,7 @@ private:
   // Per-slot one-sample memories let each synthesis family own a tiny
   // clarity/edge stage without sharing a homogenising global processor.
   std::array<float,3> cryptCreatureMemory{}, towerCreatureMemory{};
+  std::array<float,3> cryptCreatureBlockPeak{}, towerCreatureBlockPeak{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
   std::array<BoneResonatorEngine::VoiceState,3> cryptBone{};
@@ -87,6 +92,7 @@ private:
  std::array<std::atomic<float>, CurseMatrix::Lanes> hexLaneTelemetry{};
  std::array<std::atomic<float>, CurseMatrix::Destinations> hexDestinationTelemetry{};
  std::array<std::atomic<float>, EcologyMeterCount> ecologyTelemetry{};
+ std::array<std::atomic<float>,3> cryptCreatureTelemetry{}, towerCreatureTelemetry{};
  juce::dsp::DelayLine<float> delay { 48000 };
  float delayMix=.18f; float delayFeedback=.28f; float delayTimeSamples=13230.f;
  GraveChamber grave; float graveTone=.32f;
