@@ -285,15 +285,15 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
 
     makeChoice(ritualMode,"ritual.mode","MODE");
     ritualMode.box->onChange=[this]{status.setText("RITUAL // "+ritualMode.box->getText().toUpperCase(),dontSendNotification);};
-    makeControl(ritualMix,"ritual.mix","MIX");makeControl(ritualDepth,"ritual.depth","DEPTH");makeControl(ritualDrive,"ritual.drive","FURY");
+    makeControl(ritualMix,"ritual.mix","RITUAL");makeControl(ritualDepth,"ritual.depth","DEPTH");makeControl(ritualDrive,"ritual.drive","FURY");
     makeControl(ritualWidth,"ritual.width","WIDTH");makeControl(ritualFeedback,"ritual.feedback","FEEDBACK");
     for(auto* c:{&ritualMix,&ritualDepth,&ritualDrive,&ritualWidth,&ritualFeedback})setAccent(*c,"ritual");
     setAccent(ritualMode,"ritual");
 
-    makeControl(graveReverb,"grave.reverb","REVERB");makeControl(graveDelay,"grave.delay","DELAY");
+    makeControl(graveReverb,"grave.reverb","SPACE");makeControl(graveDelay,"grave.delay","DELAY");
     makeControl(graveFeedback,"grave.feedback","FEEDBACK");makeControl(graveTone,"grave.cutoff","TONE");makeControl(graveOutput,"grave.output","OUTPUT");
     for(auto* c:{&graveReverb,&graveDelay,&graveFeedback,&graveTone,&graveOutput})setAccent(*c,"grave");
-    makeControl(hexAmount,"global.hex","HEX DEPTH");setAccent(hexAmount,"hex");
+    makeControl(hexAmount,"global.hex","CURSE");setAccent(hexAmount,"hex");
 
     // Spectral Corpse altar.
     makeControl(corpsePosition,"corpse.position","POSITION");makeControl(corpseRot,"corpse.rot","ROT");
