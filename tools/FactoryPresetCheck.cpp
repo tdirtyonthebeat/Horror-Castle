@@ -14,7 +14,7 @@ public:
 };
 
 using Snapshot=std::map<std::string,float>;
-Snapshot snapshot(const juce::AudioProcessorValueTreeState& s)
+Snapshot snapshot(juce::AudioProcessorValueTreeState& s)
 {
  Snapshot out;
  const auto tree=s.copyState();
