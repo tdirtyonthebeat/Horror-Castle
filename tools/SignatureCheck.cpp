@@ -184,6 +184,20 @@ int main(int argc,char* argv[])
         check(transientMax-transientMin>.05f,isCrypt?"CRYPT creatures differ in articulation":"TOWER creatures differ in articulation");
     }
 
+    // Named synthesis-family spot checks keep the Castle honest: these are
+    // intentionally different techniques, not merely themed oscillator labels.
+    auto vaLow=render(.9,[](auto& h){exclusiveEngine(h,true,0);setParam(h,"crypt.g1.shape",.15f);});
+    auto vaHigh=render(.9,[](auto& h){exclusiveEngine(h,true,0);setParam(h,"crypt.g1.shape",.88f);});
+    auto wavetable=render(.9,[](auto& h){exclusiveEngine(h,true,1);setParam(h,"crypt.g1.shape",.72f);});
+    auto fmFamily=render(.9,[](auto& h){exclusiveEngine(h,true,2);setParam(h,"crypt.g1.shape",.72f);});
+    auto additive=render(.9,[](auto& h){exclusiveEngine(h,false,8);setParam(h,"tower.g1.shape",.72f);});
+    auto granular=render(.9,[](auto& h){exclusiveEngine(h,false,11);setParam(h,"tower.g1.shape",.82f);});
+    auto resynthesis=render(.9,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"crypt.g1.shape",.72f);});
+    check(difference(vaLow,vaHigh)>.02f,"VA subtractive MORPH changes waveform character");
+    check(difference(wavetable,fmFamily)>.08f,"Wavetable and FM families remain clearly distinct");
+    check(difference(additive,granular)>.08f,"Additive and granular families remain clearly distinct");
+    check(difference(granular,resynthesis)>.08f,"Granular and spectral-resynthesis families remain clearly distinct");
+
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
     auto corpseRotSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.rot",.92f);});
     auto corpseFormantSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.formant",.82f);});
