@@ -144,13 +144,59 @@ auto articulationFor=[&](GeneratorType type,float sh){
     }
     return e;
 };
+// CREATURE CONTRACTS: TYPE is the monster; MORPH is its transformation arc.
+// Each contract owns a different spectral/nonlinear motion.  These are deliberately
+// parameter-free so choosing a generator is itself the large audible decision.
+auto creatureContract=[&](GeneratorType type,float y,float phase,float sh,float freq){
+    const float hit=juce::jlimit(0.f,1.f,v.iron.value);
+    const float slow=std::sin(T*wander);
+    switch(type){
+        case GeneratorType::VA:        return std::tanh(y*(1.05f+1.25f*sh)-y*std::abs(y)*(.08f+.34f*sh));                 // WEREWOLF: growl/transform
+        case GeneratorType::Wavetable: return std::tanh(y*(.82f+.38f*sh)+(freq*3.f<sr*.46f?std::sin(T*phase*3.f)*.18f*sh:0.f)); // VAMPIRE: elegant harmonic bite
+        case GeneratorType::FM:        return std::tanh(y*(.78f+1.55f*hit)+slow*.07f*sh);                                // SORCERER: metallic spell strike
+        case GeneratorType::PM:        return std::sin(y*(1.35f+2.4f*sh))* (.78f+.18f*hit);                             // WITCH: warped phase magic
+        case GeneratorType::Vector:    return std::tanh(y*(.88f+.45f*sh)+slow*.12f*(1.f-sh));                           // SHAPESHIFTER: continuous mutation
+        case GeneratorType::Chip:      return juce::jlimit(-1.f,1.f,y*(.70f+.48f*hit));                                // GREMLIN: brittle digital snap
+        case GeneratorType::Noise:     return std::tanh(y*(.72f+1.45f*sh))* (.62f+.32f*hit);                            // GHOUL: breath/grit
+        case GeneratorType::Resonator: return std::tanh(y*(1.05f+.70f*hit))*(.82f+.12f*slow);                           // SKELETON: struck/rattling
+        default: break;
+    }
+    if(isCrypt){
+        switch(type){
+            case GeneratorType::ChamberI:    return std::tanh(y*(1.35f+.75f*sh));                                      // UNDERCRYPT: buried giant
+            case GeneratorType::ChamberII:   return y*(.82f+.16f*slow);                                                // CORPSE: spectral dead body
+            case GeneratorType::ChamberIII:  return std::tanh(y*(1.15f+1.15f*hit));                                    // BONE: hard skeletal strike
+            case GeneratorType::ChamberIV:   return std::tanh(y+slow*.18f*y*y);                                        // ROTATOR: mechanical creature
+            case GeneratorType::ChamberV:    return y*(.70f+.28f*(1.f-hit))+.035f*slow;                                // WRAITH: ghost/breath
+            case GeneratorType::ChamberVI:   return std::tanh(y*(1.55f+.65f*hit));                                     // COFFIN: blunt wooden body
+            case GeneratorType::ChamberVII:  return std::tanh(y*(.95f+1.55f*hit)-.18f*y*y);                             // MARROW: wet exciter
+            case GeneratorType::ChamberVIII: return std::tanh(y*(1.10f+.90f*sh))*(.88f+.08f*slow);                     // ABYSS: pressure monster
+            case GeneratorType::ChamberIX:   return std::tanh(y*(.85f+1.85f*hit)+.05f*slow);                            // POLTERGEIST: electrical ghost
+            case GeneratorType::ChamberX:    return std::tanh(y*(.92f+.65f*sh))*(.82f+.14f*slow);                       // VORTEX: rotating fluid beast
+            default: break;
+        }
+    }else{
+        switch(type){
+            case GeneratorType::ChamberI:    return std::tanh(y*(1.0f+1.0f*hit));                                      // BELL GLASS: crystalline strike
+            case GeneratorType::ChamberII:   return std::tanh(y*(.72f+1.0f*sh));                                       // SPIRE: razor spectral crown
+            case GeneratorType::ChamberIII:  return std::sin(y*(1.2f+2.8f*sh));                                       // ASTRAL FM: arcane orbit
+            case GeneratorType::ChamberIV:   return std::tanh(y*(.88f+.9f*sh)+.10f*slow);                              // PRISM: refracted creature
+            case GeneratorType::ChamberV:    return y*(.84f+.13f*slow);                                                // RELIQUARY: ancient resonant vessel
+            case GeneratorType::ChamberVI:   return std::tanh(y*(.76f+.42f*(1.f-hit)));                                // CHOIR: undead collective
+            case GeneratorType::ChamberVII:  return std::tanh(y*(.92f+.58f*sh))*(.90f+.07f*slow);                       // ORRERY: clockwork occultist
+            case GeneratorType::ChamberVIII: return std::sin(y*(1.0f+1.9f*sh))*(.86f+.10f*hit);                         // MIRROR: fractured apparition
+            case GeneratorType::ChamberIX:   return y*(.72f+.25f*(1.f-hit))+.025f*slow;                                // AURORA: luminous spirit
+            case GeneratorType::ChamberX:    return std::tanh(y*(1.05f+1.35f*sh))*(.78f+.18f*hit);                      // SIREN: overblown predator
+            default: break;
+        }
+    }
+    return y;
+};
 auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float freq){
     if(!gen.enabled||gen.level<=0.f)return 0.f;
     float y=signatureOsc(slot,gen,phase,sh,freq);
-    // A small species-specific dynamic bend reinforces identity without adding knobs.
+    y=creatureContract(gen.type,y,phase,sh,freq);
     const float art=articulationFor(gen.type,sh);
-    if(gen.type==GeneratorType::Noise)y=std::tanh(y*(.75f+1.15f*sh));
-    else if(gen.type==GeneratorType::Resonator||gen.type==GeneratorType::ChamberIII)y=std::tanh(y*(1.05f+.55f*v.iron.value));
     return y*art*gen.level;
 };
 const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/12.f); float x=0;
