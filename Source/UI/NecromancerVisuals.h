@@ -18,6 +18,7 @@ public:
         setInterceptsMouseClicks(false,false);
         startTimerHz(30);
     }
+    void focusCreature(bool crypt,int type){focusCrypt=crypt;focusType=juce::jlimit(0,17,type);focusValid=true;repaint();}
 
     void paint(juce::Graphics& g) override
     {
@@ -116,14 +117,9 @@ private:
         }
         juce::ignoreUnused(wave,width);
     }
-    void timerCallback() override {
-        // Detect selector changes without coupling UI components together.
-        for(bool crypt:{true,false}){const char* s=crypt?"crypt":"tower";for(int i=1;i<=3;++i){const int key=(crypt?0:3)+(i-1);const int t=juce::jlimit(0,17,(int)std::lround(read(param::id(s,i,"type"))));if(lastTypes[(size_t)key]>=0&&lastTypes[(size_t)key]!=t){focusCrypt=crypt;focusType=t;focusValid=true;}lastTypes[(size_t)key]=t;}}
-        repaint();
-    }
+    void timerCallback() override { repaint(); }
     HorrorCastleProcessor& processor;
     juce::AudioProcessorValueTreeState& state;
-    std::array<int,6> lastTypes{{-1,-1,-1,-1,-1,-1}};
     bool focusValid=false,focusCrypt=true; int focusType=0;
 };
 
@@ -131,11 +127,12 @@ class CreaturePortraitComponent final : public juce::Component, private juce::Ti
 {
 public:
     explicit CreaturePortraitComponent(juce::AudioProcessorValueTreeState& s):state(s){setInterceptsMouseClicks(false,false);startTimerHz(10);}
+    void focusCreature(bool crypt,int type){focusCrypt=crypt;focusType=juce::jlimit(0,17,type);focusValid=true;repaint();}
     void paint(juce::Graphics& g) override
     {
         auto r=getLocalBounds().toFloat();
         g.setColour(juce::Colour(0xff050608));g.fillRoundedRectangle(r,6.f);
-        const bool crypt=dominantCrypt(); const int type=dominantType(crypt);
+        const bool crypt=focusValid?focusCrypt:dominantCrypt(); const int type=focusValid?focusType:dominantType(crypt);
         const auto& c=synthesis_contract::get(static_cast<GeneratorType>(type),crypt);
         const auto accent=crypt?juce::Colour(0xffc45a55):juce::Colour(0xffa979c5);
         auto portrait=r.removeFromLeft(r.getWidth()*.38f).reduced(12);
@@ -164,6 +161,7 @@ private:
     }
     void timerCallback() override { repaint(); }
     juce::AudioProcessorValueTreeState& state;
+    bool focusValid=false,focusCrypt=true; int focusType=0;
 };
 
 } // namespace horrorcastle
