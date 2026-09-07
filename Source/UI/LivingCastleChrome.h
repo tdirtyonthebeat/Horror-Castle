@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "../HorrorCastle/CastleParameters.h"
+#include "../HorrorCastle/SynthesisFamilyContract.h"
 
 namespace horrorcastle {
 
@@ -95,49 +96,15 @@ private:
 
     static juce::String familyFor(bool crypt, int index)
     {
-        static const char* common[] = {
-            "VA / Subtractive", "Wavetable Spectral", "FM / Nonlinear", "Phase Modulation",
-            "Vector Hybrid", "Digital / Bitwise", "Noise / Texture", "Modal Additive"
-        };
-        if (index >= 0 && index < 8) return common[index];
-        if (crypt)
-        {
-            static const char* families[] = {
-                "Subharmonic / Subtractive", "Spectral Resynthesis", "Modal Additive", "AM / Rotational Hybrid",
-                "Physical Breath Model", "Body Resonance Model", "Exciter + Modal", "Waveguide Physical Model",
-                "Electrostatic Physical Model", "Chaotic Fluid Model"
-            };
-            const int i = index - 8;
-            return (i >= 0 && i < 10) ? families[i] : "Unknown Crypt Engine";
-        }
-        static const char* families[] = {
-            "Additive / Bell Modal", "Additive Spectral", "FM / Orbital Hybrid", "Granular / Refraction",
-            "Physical Resonator", "Formant Additive", "Additive / Orbital", "Spectral Reflection",
-            "Field / Additive Hybrid", "Physical Air-Jet"
-        };
-        const int i = index - 8;
-        return (i >= 0 && i < 10) ? families[i] : "Unknown Tower Engine";
+        index=juce::jlimit(0,17,index);
+        return synthesis_contract::get(static_cast<GeneratorType>(index),crypt).family;
     }
 
     static juce::String shapeFor(bool crypt, int index)
     {
-        static const char* common[] = {
-            "WAVE", "SCAN", "INDEX", "PHASE", "MORPH", "BITS", "COLOR", "BODY"
-        };
-        if (index >= 0 && index < 8) return common[index];
-        if (crypt)
-        {
-            static const char* shape[] = {
-                "DEPTH", "POSITION", "BONE", "ROTATION", "BREATH", "LID", "MARROW", "PRESSURE", "CHARGE", "TURBULENCE"
-            };
-            const int i = index - 8;
-            return (i >= 0 && i < 10) ? shape[i] : "SHAPE";
-        }
-        static const char* shape[] = {
-            "GLASS", "HEIGHT", "INDEX", "REFRACT", "RESONANCE", "CHOIR", "ORBIT", "REFLECTION", "RADIANCE", "APERTURE"
-        };
-        const int i = index - 8;
-        return (i >= 0 && i < 10) ? shape[i] : "SHAPE";
+        index=juce::jlimit(0,17,index);
+        const auto& contract=synthesis_contract::get(static_cast<GeneratorType>(index),crypt);
+        return contract.morphTrajectory;
     }
 
     void refresh()
@@ -193,7 +160,7 @@ private:
                              head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
             g.setColour(accent.withAlpha(.72f));
             g.setFont(juce::FontOptions(8.7f));
-            g.drawFittedText("MORPH = " + slots[(size_t)i].shapeMeaning + "   •   LEVEL " + juce::String(slots[(size_t)i].level, 2),
+            g.drawFittedText("MORPH: " + slots[(size_t)i].shapeMeaning + "   •   LEVEL " + juce::String(slots[(size_t)i].level, 2),
                              head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
         }
     }
