@@ -2,6 +2,7 @@
 #include "../Source/HorrorCastle/CastleEngine.h"
 #include "../Source/HorrorCastle/CastleParameters.h"
 #include "../Source/HorrorCastle/Grimoire.h"
+#include "../Source/HorrorCastle/SynthesisFamilyContract.h"
 #include <cmath>
 #include <iostream>
 #include <functional>
@@ -78,6 +79,13 @@ float lowBodyProxy(const Render& r){
 float difference(const Render& a,const Render& b){const size_t n=std::min(a.left.size(),b.left.size());double s=0;for(size_t i=0;i<n;++i){const double d=a.left[i]-b.left[i];s+=d*d;}const float d=n?(float)std::sqrt(s/(double)n):0.f;return d/std::max(.0001f,std::max(rms(a),rms(b)));}
 float crestProxy(const Render& r){float peak=0.f;for(float x:r.left)peak=std::max(peak,std::abs(x));return peak/std::max(.0001f,rms(r));}
 float transientProxy(const Render& r){if(r.left.empty())return 0.f;const size_t n=std::min<size_t>(r.left.size(),2400);double a=0,b=0;for(size_t i=0;i<n;++i)a+=r.left[i]*r.left[i];for(size_t i=n;i<std::min(r.left.size(),n*4);++i)b+=r.left[i]*r.left[i];const float ar=n?(float)std::sqrt(a/n):0.f;const size_t bn=std::min(r.left.size(),n*4)-n;const float br=bn?(float)std::sqrt(b/bn):0.f;return ar/std::max(.0001f,br);}
+float stereoProxy(const Render& r){const size_t n=std::min(r.left.size(),r.right.size());double side=0,mid=0;for(size_t i=0;i<n;++i){const double l=r.left[i],rr=r.right[i];side+=(l-rr)*(l-rr);mid+=(l+rr)*(l+rr);}return mid>1.0e-12?(float)std::sqrt(side/mid):0.f;}
+float temporalFluxProxy(const Render& r){if(r.left.size()<1024)return 0.f;constexpr size_t hop=512;double prev=0,flux=0;int frames=0;for(size_t p=0;p+hop<=r.left.size();p+=hop){double e=0;for(size_t i=p;i<p+hop;++i)e+=r.left[i]*r.left[i];e=std::sqrt(e/hop);if(frames>0)flux+=std::abs(e-prev);prev=e;++frames;}return frames>1?(float)(flux/(frames-1))/std::max(.0001f,rms(r)):0.f;}
+float contractDistance(const SynthesisFamilyContract& a,const SynthesisFamilyContract& b){
+    const float d0=a.morphCurve-b.morphCurve,d1=a.articulationPower-b.articulationPower,d2=a.transientBoost-b.transientBoost;
+    const float d3=a.sustainBias-b.sustainBias,d4=a.clarity-b.clarity,d5=a.nonlinearDrive-b.nonlinearDrive,d6=a.stereoMotion-b.stereoMotion;
+    return std::sqrt(d0*d0+d1*d1+d2*d2+d3*d3+d4*d4+d5*d5+d6*d6);
+}
 
 bool finite(const Render& r){for(float x:r.left)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;for(float x:r.right)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;return true;}
 float tailRms(const Render& r,size_t count=4800){if(r.left.empty())return 0.f;const size_t begin=r.left.size()>count?r.left.size()-count:0;double s=0;size_t n=0;for(size_t i=begin;i<r.left.size();++i){s+=r.left[i]*r.left[i];++n;}return n?(float)std::sqrt(s/(double)n):0.f;}
@@ -154,6 +162,29 @@ int main(int argc,char* argv[])
              <<" ratio="<<(corpseBrightness>1.0e-9f?spireBrightness/corpseBrightness:0.f)<<"\n";
     check(spireBrightness>corpseBrightness*1.10f,"SPECTRAL SPIRE lives above CORPSE");
 
+    // Synthesis Family Contract gate: every generator must declare all seven
+    // behavioral laws, and the numeric implementation vectors must occupy
+    // distinct regions before the audio test even runs.
+    for(bool isCrypt : {true,false})
+    {
+        float nearestContract=1000.f;
+        bool declarationsComplete=true;
+        for(int type=0;type<18;++type)
+        {
+            const auto& a=synthesis_contract::get(static_cast<GeneratorType>(type),isCrypt);
+            declarationsComplete=declarationsComplete
+                && a.excitation[0] && a.synthesisMethod[0] && a.spectralMotion[0]
+                && a.articulationLaw[0] && a.nonlinearity[0] && a.stereoLaw[0]
+                && a.morphTrajectory[0];
+            for(int other=type+1;other<18;++other)
+                nearestContract=std::min(nearestContract,contractDistance(
+                    a,synthesis_contract::get(static_cast<GeneratorType>(other),isCrypt)));
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest synthesis-contract region="<<nearestContract<<"\n";
+        check(declarationsComplete,isCrypt?"all CRYPT generators declare seven synthesis laws":"all TOWER generators declare seven synthesis laws");
+        check(nearestContract>.025f,isCrypt?"CRYPT synthesis contracts occupy distinct regions":"TOWER synthesis contracts occupy distinct regions");
+    }
+
     // Full generator fingerprint gate: every selectable generator must produce a
     // materially different neutral render, and its single MORPH control must move it.
     for(bool isCrypt : {true,false})
@@ -177,11 +208,20 @@ int main(int argc,char* argv[])
         check(allFinite,isCrypt?"all 18 CRYPT generators are audible and finite":"all 18 TOWER generators are audible and finite");
         check(allMorph,isCrypt?"MORPH audibly changes every CRYPT generator":"MORPH audibly changes every TOWER generator");
         check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
-        float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f;
-        for(const auto& fp:fingerprints){const float cr=crestProxy(fp),tr=transientProxy(fp);crestMin=std::min(crestMin,cr);crestMax=std::max(crestMax,cr);transientMin=std::min(transientMin,tr);transientMax=std::max(transientMax,tr);}
-        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" creature-contract spread crest="<<(crestMax-crestMin)<<" transient="<<(transientMax-transientMin)<<"\n";
+        float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f,stereoMin=1000.f,stereoMax=0.f,fluxMin=1000.f,fluxMax=0.f;
+        for(const auto& fp:fingerprints){
+            const float cr=crestProxy(fp),tr=transientProxy(fp),st=stereoProxy(fp),fl=temporalFluxProxy(fp);
+            crestMin=std::min(crestMin,cr);crestMax=std::max(crestMax,cr);
+            transientMin=std::min(transientMin,tr);transientMax=std::max(transientMax,tr);
+            stereoMin=std::min(stereoMin,st);stereoMax=std::max(stereoMax,st);
+            fluxMin=std::min(fluxMin,fl);fluxMax=std::max(fluxMax,fl);
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" behavioral-region spread crest="<<(crestMax-crestMin)
+                 <<" transient="<<(transientMax-transientMin)<<" stereo="<<(stereoMax-stereoMin)<<" flux="<<(fluxMax-fluxMin)<<"\n";
         check(crestMax-crestMin>.10f,isCrypt?"CRYPT creatures differ dynamically":"TOWER creatures differ dynamically");
         check(transientMax-transientMin>.05f,isCrypt?"CRYPT creatures differ in articulation":"TOWER creatures differ in articulation");
+        check(stereoMax-stereoMin>.002f,isCrypt?"CRYPT creatures differ in stereo law":"TOWER creatures differ in stereo law");
+        check(fluxMax-fluxMin>.002f,isCrypt?"CRYPT creatures differ in temporal motion":"TOWER creatures differ in temporal motion");
     }
 
     // Named synthesis-family spot checks keep the Castle honest: these are
