@@ -59,7 +59,19 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
                 case GeneratorType::ChamberI:{const float bellA=advanceAux(aux1,freq*2.41421356f,.11f),bellB=advanceAux(aux2,freq*3.73205081f,.53f);return std::tanh(base*.24f+bellA*(.48f+.18f*sh)+bellB*(.31f+.22f*character));}
                 case GeneratorType::ChamberII:{const float spireA=advanceAux(aux1,freq*5.071f,.29f),spireB=advanceAux(aux2,freq*9.173f,1.07f),crown=(freq*13.127f<sr*.46f)?std::sin(T*phase*13.127f+sh*2.2f):0.f,shoulder=(freq*3.019f<sr*.46f)?std::sin(T*phase*3.019f+.41f):0.f;return std::tanh(base*.045f+shoulder*.13f+spireA*(.52f+.22f*sh)+spireB*(.34f+.12f*character)+crown*(.22f+.18f*character));}
                 case GeneratorType::ChamberIII:{const float astral=advanceAux(aux1,freq*1.61803399f,.37f),orbit=advanceAux(aux2,freq*.70710678f,.83f),index=1.25f+sh*8.75f;return std::sin(T*phase+astral*index+orbit*(.35f+1.65f*character));}
-                case GeneratorType::ChamberIV:{const float prismA=advanceAux(aux1,freq*2.071f,.21f),prismB=advanceAux(aux2,freq*5.173f,.93f),refraction=base*(.36f-.18f*sh)+prismA*(.34f+.28f*sh)+prismB*(.18f+.24f*character);return std::sin(refraction*juce::MathConstants<float>::pi*(1.15f+sh*1.85f));}
+                case GeneratorType::ChamberIV:{
+                    // PRISM is the Castle's oscillator-granular creature. Three
+                    // continuously re-seeded micro-grains overlap with different
+                    // pitch ratios; MORPH changes grain density/window sharpness.
+                    const float grainA=advanceAux(aux1,freq*(1.31f+2.20f*sh),.21f);
+                    const float grainB=advanceAux(aux2,freq*(2.07f+5.10f*sh),.93f);
+                    const float wA=std::pow(.5f+.5f*std::sin(T*aux1),1.0f+7.0f*sh);
+                    const float wB=std::pow(.5f+.5f*std::sin(T*aux2+2.1f),1.0f+9.0f*sh);
+                    const float wC=std::pow(.5f+.5f*std::sin(T*phase+4.2f),1.0f+5.0f*sh);
+                    const float cloud=grainA*wA+grainB*wB+base*wC;
+                    const float refraction=cloud*(.52f+.28f*sh)+std::sin(T*phase*3.0f+.4f)*(.08f+.16f*character);
+                    return std::tanh(refraction*(1.05f+1.65f*sh));
+                }
                 case GeneratorType::ChamberV:return reliquary.renderSample(v.towerReliquary[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVI:return choir.renderSample(v.towerChoir[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
                 case GeneratorType::ChamberVII:return orrery.renderSample(v.towerOrrery[(size_t)slot],freq,sh,character,expression,v.velocity,sr);
@@ -196,6 +208,52 @@ auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float
     if(!gen.enabled||gen.level<=0.f)return 0.f;
     float y=signatureOsc(slot,gen,phase,sh,freq);
     y=creatureContract(gen.type,y,phase,sh,freq);
+
+    // FAMILY CLARITY: a tiny per-slot high-frequency recovery stage keeps FM,
+    // wavetable, granular, spectral and struck creatures crisp before the shared
+    // Castle filtering. Heavy bodies deliberately receive much less recovery.
+    float clarity=.06f;
+    switch(gen.type){
+        case GeneratorType::VA: clarity=.09f; break;
+        case GeneratorType::Wavetable: clarity=.15f; break;
+        case GeneratorType::FM: clarity=.22f; break;
+        case GeneratorType::PM: clarity=.20f; break;
+        case GeneratorType::Vector: clarity=.12f; break;
+        case GeneratorType::Chip: clarity=.24f; break;
+        case GeneratorType::Noise: clarity=.10f; break;
+        case GeneratorType::Resonator: clarity=.08f; break;
+        default:
+            if(isCrypt){
+                switch(gen.type){
+                    case GeneratorType::ChamberII: clarity=.14f; break; // spectral corpse
+                    case GeneratorType::ChamberIII: clarity=.18f; break; // bone
+                    case GeneratorType::ChamberV: clarity=.11f; break; // wraith
+                    case GeneratorType::ChamberVIII: clarity=.02f; break; // abyss keeps weight
+                    case GeneratorType::ChamberIX: clarity=.24f; break; // sparks
+                    case GeneratorType::ChamberX: clarity=.08f; break; // fluid
+                    default: clarity=.06f; break;
+                }
+            }else{
+                switch(gen.type){
+                    case GeneratorType::ChamberI: clarity=.18f; break; // bell glass
+                    case GeneratorType::ChamberII: clarity=.25f; break; // spire
+                    case GeneratorType::ChamberIII: clarity=.22f; break; // astral FM
+                    case GeneratorType::ChamberIV: clarity=.26f; break; // granular prism
+                    case GeneratorType::ChamberVI: clarity=.10f; break; // choir
+                    case GeneratorType::ChamberVIII: clarity=.20f; break; // mirror
+                    case GeneratorType::ChamberIX: clarity=.15f; break; // aurora
+                    case GeneratorType::ChamberX: clarity=.17f; break; // siren
+                    default: clarity=.09f; break;
+                }
+            }
+            break;
+    }
+    float& memory=isCrypt?v.cryptCreatureMemory[(size_t)slot]:v.towerCreatureMemory[(size_t)slot];
+    const float alpha=.10f+.16f*(1.f-sh);
+    memory+=alpha*(y-memory);
+    const float edge=y-memory;
+    y=std::tanh(y+edge*clarity*(1.0f+1.35f*sh));
+
     const float art=articulationFor(gen.type,sh);
     return y*art*gen.level;
 };
