@@ -17,18 +17,24 @@ class LivingCastleEditor final : public HorrorCastleEditor
 public:
     explicit LivingCastleEditor(HorrorCastleProcessor& p)
         : HorrorCastleEditor(p), pedestals{{
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",1),
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",2),
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"crypt",3),
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",1),
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",2),
-            std::make_unique<CreaturePedestalComponent>(p.getParameterState(),"tower",3)}}, chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
+            std::make_unique<CreaturePedestalComponent>(p,"crypt",1),
+            std::make_unique<CreaturePedestalComponent>(p,"crypt",2),
+            std::make_unique<CreaturePedestalComponent>(p,"crypt",3),
+            std::make_unique<CreaturePedestalComponent>(p,"tower",1),
+            std::make_unique<CreaturePedestalComponent>(p,"tower",2),
+            std::make_unique<CreaturePedestalComponent>(p,"tower",3)}}, chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
     {
         addAndMakeVisible(chrome);
         chrome.toBack();
         addAndMakeVisible(creaturePortrait);
         addAndMakeVisible(soulGlass);
         for(auto& pedestal:pedestals)addAndMakeVisible(*pedestal);
+        for(auto& pedestal:pedestals)pedestal->onFocus=[this](bool crypt,int type,int slot){
+            focusedCrypt=crypt;focusedType=type;focusedSlot=slot;
+            creaturePortrait.focusCreature(crypt,type);
+            soulGlass.focusCreature(crypt,type);
+            grimoire.showCreatureGuide(crypt,type);
+        };
 
         flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
         flowTitle.setJustificationType(juce::Justification::centred);
@@ -133,6 +139,7 @@ private:
     juce::TextButton readGrimoire;
     juce::Label flowTitle;
     bool laboratory=false;
+    bool focusedCrypt=true; int focusedType=0,focusedSlot=0;
 };
 
 } // namespace horrorcastle
