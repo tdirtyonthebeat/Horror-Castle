@@ -22,6 +22,30 @@ public:
         addAndMakeVisible(creaturePortrait);
         addAndMakeVisible(soulGlass);
 
+        flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
+        flowTitle.setJustificationType(juce::Justification::centred);
+        flowTitle.setColour(juce::Label::textColourId,juce::Colour(0xffc9b99f));
+        flowTitle.setFont(juce::Font(juce::FontOptions(10.5f)).boldened());
+        addAndMakeVisible(flowTitle);
+
+        laboratoryToggle.setButtonText("OPEN LABORATORY");
+        laboratoryToggle.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff080a0d));
+        laboratoryToggle.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffc9b99f));
+        addAndMakeVisible(laboratoryToggle);
+        laboratoryToggle.onClick=[this]{
+            laboratory=!laboratory;
+            setPerformanceMode(!laboratory);
+            laboratoryToggle.setButtonText(laboratory?"RETURN TO PERFORMANCE":"OPEN LABORATORY");
+            physicsToggle.setVisible(laboratory);nervousToggle.setVisible(laboratory);
+            if(!laboratory){physics.setVisible(false);nervousSystem.setVisible(false);}
+        };
+
+        readGrimoire.setButtonText("READ GRIMOIRE");
+        readGrimoire.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff160f18));
+        readGrimoire.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffd6c4dc));
+        addAndMakeVisible(readGrimoire);
+        readGrimoire.onClick=[this]{openGrimoire();};
+
         physicsToggle.setButtonText("DEEP EDIT");
         physicsToggle.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff080a0d));
         physicsToggle.setColour(juce::TextButton::textColourOffId,juce::Colour(0xffd1a39d));
@@ -37,6 +61,9 @@ public:
         addAndMakeVisible(nervousToggle);
         addAndMakeVisible(nervousSystem);
         nervousSystem.setVisible(false);
+        setPerformanceMode(true);
+        physicsToggle.setVisible(false);
+        nervousToggle.setVisible(false);
 
         physicsToggle.onClick=[this]{
             const bool show=!physics.isVisible();
@@ -67,6 +94,9 @@ public:
         const float sy=(float)getHeight()/1086.0f;
         auto bounds=[&](int x,int y,int w,int h){return juce::Rectangle<int>((int)std::lround(x*sx),(int)std::lround(y*sy),(int)std::lround(w*sx),(int)std::lround(h*sy));};
 
+        flowTitle.setBounds(bounds(390,55,520,27));
+        laboratoryToggle.setBounds(bounds(930,55,180,27));
+        readGrimoire.setBounds(bounds(1120,55,170,27));
         physicsToggle.setBounds(bounds(775,55,176,27));
         nervousToggle.setBounds(bounds(963,55,176,27));
         physics.setBounds(bounds(176,462,1096,238));
@@ -87,6 +117,10 @@ private:
     SoulGlassComponent soulGlass;
     juce::TextButton physicsToggle;
     juce::TextButton nervousToggle;
+    juce::TextButton laboratoryToggle;
+    juce::TextButton readGrimoire;
+    juce::Label flowTitle;
+    bool laboratory=false;
 };
 
 } // namespace horrorcastle
