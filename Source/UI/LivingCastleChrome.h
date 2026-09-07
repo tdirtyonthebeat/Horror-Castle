@@ -50,7 +50,7 @@ public:
         drawTitle(g, "TOWER", Rectangle<float>(cx + 24, 100, r.getWidth() * .43f, 27), Colour(0xffb885d6));
 
         // The central UX idea: every slot visibly announces what species powers it,
-        // what kind of synthesis it uses, and what SHAPE means for that species.
+        // what kind of synthesis it uses, and what MORPH means for that species.
         drawEngineRow(g, "crypt", 26.0f, 132.0f, cx - 44.0f, cryptSlots, Colour(0xffd85b55));
         drawEngineRow(g, "tower", cx + 24.0f, 132.0f, r.getRight() - 26.0f, towerSlots, Colour(0xffb985dd));
 
@@ -75,7 +75,7 @@ public:
         g.drawText("GARGOYLE GUIDE", guide.removeFromTop(25).toNearestInt(), Justification::centredLeft);
         g.setColour(Colour(0xffa99f91));
         g.setFont(FontOptions(10.5f));
-        g.drawFittedText("Each engine has its own physics.\nThe card above each generator tells\nyou what SHAPE controls for it.",
+        g.drawFittedText("Summon a creature, then MORPH it.\nEach card shows its synthesis family\nand the one transformation that matters.",
                          guide.reduced(2).toNearestInt(), Justification::topLeft, 4);
     }
 
@@ -96,24 +96,24 @@ private:
     static juce::String familyFor(bool crypt, int index)
     {
         static const char* common[] = {
-            "Virtual Analog", "Wavetable", "Ritual FM", "Phase Modulation",
-            "Vector Morph", "Chip / Digital", "Noise", "Resonator"
+            "VA / Subtractive", "Wavetable Spectral", "FM / Nonlinear", "Phase Modulation",
+            "Vector Hybrid", "Digital / Bitwise", "Noise / Texture", "Modal Additive"
         };
         if (index >= 0 && index < 8) return common[index];
         if (crypt)
         {
             static const char* families[] = {
-                "Subterranean Pressure", "Spectral Resynthesis", "Bone Resonance", "Rotational Coupling",
-                "Breath / Air Column", "Body Resonance", "Marrow Exciter", "Waveguide Abyss",
-                "Electrostatic Haunt", "Chaotic Fluid"
+                "Subharmonic / Subtractive", "Spectral Resynthesis", "Modal Additive", "AM / Rotational Hybrid",
+                "Physical Breath Model", "Body Resonance Model", "Exciter + Modal", "Waveguide Physical Model",
+                "Electrostatic Physical Model", "Chaotic Fluid Model"
             };
             const int i = index - 8;
             return (i >= 0 && i < 10) ? families[i] : "Unknown Crypt Engine";
         }
         static const char* families[] = {
-            "Bell Glass", "Spectral Spire", "Astral FM", "Prismatic Refraction",
-            "Reliquary Resonance", "Choir Body", "Orbital Resonance", "Spectral Mirror",
-            "Electromagnetic Field", "Air-Jet Siren"
+            "Additive / Bell Modal", "Additive Spectral", "FM / Orbital Hybrid", "Granular / Refraction",
+            "Physical Resonator", "Formant Additive", "Additive / Orbital", "Spectral Reflection",
+            "Field / Additive Hybrid", "Physical Air-Jet"
         };
         const int i = index - 8;
         return (i >= 0 && i < 10) ? families[i] : "Unknown Tower Engine";
@@ -193,7 +193,7 @@ private:
                              head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
             g.setColour(accent.withAlpha(.72f));
             g.setFont(juce::FontOptions(8.7f));
-            g.drawFittedText("SHAPE = " + slots[(size_t)i].shapeMeaning + "   •   LEVEL " + juce::String(slots[(size_t)i].level, 2),
+            g.drawFittedText("MORPH = " + slots[(size_t)i].shapeMeaning + "   •   LEVEL " + juce::String(slots[(size_t)i].level, 2),
                              head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
         }
     }
