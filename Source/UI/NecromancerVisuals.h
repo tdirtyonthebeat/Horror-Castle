@@ -34,6 +34,12 @@ public:
 
         std::array<float,512> wave{}; std::array<float,64> bins{}; float width=0.f;
         processor.copySoulGlass(wave,bins,width);
+        // Real spectrum is intentionally calculated on the message thread, never
+        // the audio thread. A Hann-windowed 512-sample DFT is plenty for this
+        // teaching display and keeps synthesis real-time safe.
+        float spectralPeak=1.0e-6f;
+        for(size_t k=0;k<bins.size();++k){double re=0.0,im=0.0;const double omega=juce::MathConstants<double>::twoPi*(double)(k+1)/(double)wave.size();for(size_t n=0;n<wave.size();++n){const double win=.5-.5*std::cos(juce::MathConstants<double>::twoPi*(double)n/(double)(wave.size()-1));const double a=omega*(double)n;re+=wave[n]*win*std::cos(a);im-=wave[n]*win*std::sin(a);}bins[k]=(float)std::sqrt(re*re+im*im);spectralPeak=std::max(spectralPeak,bins[k]);}
+        for(auto& b:bins)b=juce::jlimit(0.f,1.f,b/spectralPeak);
         const auto identity=dominantIdentity();
         const auto& contract=synthesis_contract::get(static_cast<GeneratorType>(identity.second),identity.first);
 
