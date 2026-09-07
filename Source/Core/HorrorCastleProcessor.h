@@ -61,7 +61,7 @@ private:
     std::array<std::atomic<float>,512> soulWave{};
     std::array<std::atomic<float>,64> soulSpectrum{};
     std::atomic<float> soulWidth{0.f};
-    size_t soulWrite=0;
+    std::atomic<size_t> soulWrite{0};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(HorrorCastleProcessor)
 };
