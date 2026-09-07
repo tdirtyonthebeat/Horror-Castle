@@ -76,6 +76,9 @@ float lowBodyProxy(const Render& r){
     return total>1.0e-12?(float)std::sqrt(low/total):0.f;
 }
 float difference(const Render& a,const Render& b){const size_t n=std::min(a.left.size(),b.left.size());double s=0;for(size_t i=0;i<n;++i){const double d=a.left[i]-b.left[i];s+=d*d;}const float d=n?(float)std::sqrt(s/(double)n):0.f;return d/std::max(.0001f,std::max(rms(a),rms(b)));}
+float crestProxy(const Render& r){float peak=0.f;for(float x:r.left)peak=std::max(peak,std::abs(x));return peak/std::max(.0001f,rms(r));}
+float transientProxy(const Render& r){if(r.left.empty())return 0.f;const size_t n=std::min<size_t>(r.left.size(),2400);double a=0,b=0;for(size_t i=0;i<n;++i)a+=r.left[i]*r.left[i];for(size_t i=n;i<std::min(r.left.size(),n*4);++i)b+=r.left[i]*r.left[i];const float ar=n?(float)std::sqrt(a/n):0.f;const size_t bn=std::min(r.left.size(),n*4)-n;const float br=bn?(float)std::sqrt(b/bn):0.f;return ar/std::max(.0001f,br);}
+
 bool finite(const Render& r){for(float x:r.left)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;for(float x:r.right)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;return true;}
 float tailRms(const Render& r,size_t count=4800){if(r.left.empty())return 0.f;const size_t begin=r.left.size()>count?r.left.size()-count:0;double s=0;size_t n=0;for(size_t i=begin;i<r.left.size();++i){s+=r.left[i]*r.left[i];++n;}return n?(float)std::sqrt(s/(double)n):0.f;}
 void setPossession(HarnessProcessor& h,const char* id,float amount){setParam(h,juce::String("possession.")+id,amount);}
@@ -174,6 +177,11 @@ int main(int argc,char* argv[])
         check(allFinite,isCrypt?"all 18 CRYPT generators are audible and finite":"all 18 TOWER generators are audible and finite");
         check(allMorph,isCrypt?"MORPH audibly changes every CRYPT generator":"MORPH audibly changes every TOWER generator");
         check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
+        float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f;
+        for(const auto& fp:fingerprints){const float cr=crestProxy(fp),tr=transientProxy(fp);crestMin=std::min(crestMin,cr);crestMax=std::max(crestMax,cr);transientMin=std::min(transientMin,tr);transientMax=std::max(transientMax,tr);}
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" creature-contract spread crest="<<(crestMax-crestMin)<<" transient="<<(transientMax-transientMin)<<"\n";
+        check(crestMax-crestMin>.10f,isCrypt?"CRYPT creatures differ dynamically":"TOWER creatures differ dynamically");
+        check(transientMax-transientMin>.05f,isCrypt?"CRYPT creatures differ in articulation":"TOWER creatures differ in articulation");
     }
 
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
