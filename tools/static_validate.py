@@ -19,6 +19,7 @@ for f in ['Source/UI/NervousSystemComponent.h','Assets/StoneShadow/backdrop.png'
 require((root/'Source/UI/NecromancerVisuals.h').exists(),'missing Necromancer visualizer module')
 visuals=text('Source/UI/NecromancerVisuals.h');processor_h=text('Source/Core/HorrorCastleProcessor.h');processor_cpp=text('Source/Core/HorrorCastleProcessor.cpp')
 require('CreaturePortraitComponent' in visuals and 'SoulGlassComponent' in visuals,'creature portrait / Soul Glass UI missing')
+require('FAMILY LENS' in visuals and 'Hann-windowed' in visuals and 'VortexEvent' in visuals and 'SirenPressure' in visuals,'creature-aware Soul Glass family lenses missing')
 require('copySoulGlass' in processor_h and 'soulSpectrum' in processor_cpp and 'soulWidth' in processor_cpp,'Soul Glass audio telemetry missing')
 require('return new LivingCastleEditor(*this)' in processor,'production editor wrapper missing');living=text('Source/HorrorCastle/LivingCastleEditor.h');nervous=text('Source/UI/NervousSystemComponent.h');require('NERVOUS SYSTEM' in living and 'getEcologyMeter' in nervous,'Nervous System UI incomplete')
 editor=text('Source/HorrorCastle/HorrorCastleEditor.cpp');signature=text('tools/SignatureCheck.cpp')
@@ -61,4 +62,5 @@ print('PASS  subtractive / wavetable / FM / additive / granular / resynthesis fa
 print('PASS  synthesis family contracts declare and drive seven behavioral laws')
 print('PASS  behavioral regions are measured across dynamics, articulation, stereo and temporal motion')
 print('PASS  creature portrait + Soul Glass visualization are wired to live synthesis state')
+print('PASS  Soul Glass uses real message-thread spectrum + creature-aware family lenses')
 print('PASS  independent release Source/ naming scan')
