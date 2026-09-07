@@ -14,6 +14,7 @@ public:
     ~GrimoireComponent() override;
     void paint(juce::Graphics&) override;
     void resized() override;
+    void showCreatureGuide(bool crypt,int type);
     std::function<void()> onClose;
     std::function<void(const juce::String&)> onStatus;
 
