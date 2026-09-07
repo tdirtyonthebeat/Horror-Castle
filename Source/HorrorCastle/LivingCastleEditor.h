@@ -3,6 +3,7 @@
 #include "../UI/NervousSystemComponent.h"
 #include "../UI/LivingCastleChrome.h"
 #include "../UI/LivingEngineMacroPanel.h"
+#include "../UI/NecromancerVisuals.h"
 #include <cmath>
 
 namespace horrorcastle {
@@ -14,10 +15,12 @@ class LivingCastleEditor final : public HorrorCastleEditor
 {
 public:
     explicit LivingCastleEditor(HorrorCastleProcessor& p)
-        : HorrorCastleEditor(p), chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p)
+        : HorrorCastleEditor(p), chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
     {
         addAndMakeVisible(chrome);
         chrome.toBack();
+        addAndMakeVisible(creaturePortrait);
+        addAndMakeVisible(soulGlass);
 
         physicsToggle.setButtonText("DEEP EDIT");
         physicsToggle.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff080a0d));
@@ -68,12 +71,20 @@ public:
         nervousToggle.setBounds(bounds(963,55,176,27));
         physics.setBounds(bounds(176,462,1096,238));
         nervousSystem.setBounds(bounds(470,470,520,220));
+
+        // The lower left is now the summoned creature, not a decorative book.
+        // Soul Glass sits between the creature and the right-hand Grimoire,
+        // preserving the reference composition while making the sound visible.
+        creaturePortrait.setBounds(bounds(24,805,400,245));
+        soulGlass.setBounds(bounds(438,805,390,245));
     }
 
 private:
     LivingCastleChrome chrome;
     LivingEngineMacroPanel physics;
     NervousSystemComponent nervousSystem;
+    CreaturePortraitComponent creaturePortrait;
+    SoulGlassComponent soulGlass;
     juce::TextButton physicsToggle;
     juce::TextButton nervousToggle;
 };
