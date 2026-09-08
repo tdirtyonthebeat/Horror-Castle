@@ -198,8 +198,22 @@ auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float
 const float fA=f,fB=f*std::pow(2.f,g[1].tune/12.f),fC=f*std::pow(2.f,g[2].tune/12.f); float x=0;
 x+=renderSlot(0,g[0],v.pa,shapeA,fA);x+=renderSlot(1,g[1],v.pb,shapeB,fB);x+=renderSlot(2,g[2],v.pc,shapeC,fC);
 x*=.42f;if(s.voice.noise.enabled)x+=rnd()*s.voice.noise.level*.2f*juce::jlimit(0.f,1.f,v.amp.value);
+
+// Preserve a small amount of each summoned creature's native body through the
+// shared Castle filters. This prevents downstream subtractive plumbing from
+// collapsing radically different synthesis families toward the same timbre.
+const float nativeBody=x;
+float identityPreserve=0.f,identityWeight=0.f;
+for(const auto& gen:g)if(gen.enabled&&gen.level>0.f){
+    const auto& law=synthesis_contract::get(gen.type,isCrypt);
+    identityPreserve+=(.035f+.28f*law.clarity+.05f*law.stereoMotion)*gen.level;
+    identityWeight+=gen.level;
+}
+identityPreserve=identityWeight>1.0e-5f?juce::jlimit(.035f,.20f,identityPreserve/identityWeight):.05f;
+
 FilterCell fa=s.voice.filters[0],fb=s.voice.filters[1];fa.cutoff=juce::jlimit(.002f,.48f,fa.cutoff+sceneCut*.20f);fb.cutoff=juce::jlimit(.002f,.48f,fb.cutoff+sceneCut*.16f);fa.drive=juce::jlimit(0.f,1.f,fa.drive+sceneDrive);fb.drive=juce::jlimit(0.f,1.f,fb.drive+sceneDrive);
 float& za=isCrypt?v.cfa:v.tfa;float& zb=isCrypt?v.cfb:v.tfb;float a=filter(x,za,fa,mod),b=filter(x,zb,fb,mod*.7f);if(s.voice.filterRoute==Route::Parallel)x=.5f*(a+b);else if(s.voice.filterRoute==Route::Crossfeed)x=.65f*a+.35f*b;else if(s.voice.filterRoute==Route::Split)x=.78f*a+.22f*b;else x=filter(a,zb,fb,mod*.7f);
+x=x*(1.f-identityPreserve)+nativeBody*identityPreserve;
 float stereoSide=familyStereoSide;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
 else{const float bellA=(f*2.41421356f<sr*.46f)?std::sin(T*v.towerBellPhaseA):0.f,bellB=(f*3.73205081f<sr*.46f)?std::sin(T*v.towerBellPhaseB+.37f):0.f,celestial=bellA*(.08f+.30f*character)+bellB*(.03f+.17f*character),alpha=1.f-std::exp(-T*2500.f/(float)sr);v.towerBody+=alpha*(x-v.towerBody);const float air=x-v.towerBody;x=std::tanh(x*(.78f-.20f*character)+air*(.14f+.48f*character)+celestial);stereoSide=(bellA-bellB)*(.015f+.11f*character);}
 // Generator-local articulation already owns the amplitude contour. Keep only
