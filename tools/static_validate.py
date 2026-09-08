@@ -25,6 +25,7 @@ require('setPerformanceMode' in base_editor and 'genTune' in base_editor and 'he
 pedestal=text('Source/UI/CreaturePedestalComponent.h')
 require('CreaturePedestalComponent' in pedestal and 'SUMMON CREATURE' in pedestal and 'TRANSFORM' in pedestal and 'AWAKE' in pedestal,'creature pedestal contract missing')
 require('getCreatureEnergy' in pedestal and 'VortexEvent' in pedestal and 'PoltergeistInstability' in pedestal and 'SirenPressure' in pedestal,'pedestal is not driven by live creature telemetry')
+require('SOUL ' in pedestal and 'behaviorName' in pedestal and 'COLLAPSING' in pedestal and 'OVERBLOWN' in pedestal,'live creature behavior readout missing')
 require('std::array<std::unique_ptr<CreaturePedestalComponent>,6>' in editor,'six performance pedestals missing')
 require('showGrimoireCreatureGuide' in editor and 'setFocused' in editor,'pedestal selection does not synchronize witness/read surfaces')
 require('focusCreature' in visuals and 'focusedIdentity' in visuals,'Soul Glass / portrait focus API missing')
@@ -50,6 +51,7 @@ require('SynthesisFamilyContract.h' in chrome and 'familyFor' in chrome and 'mor
 require('oscillator-granular creature' in scene and 'contract.clarity' in scene,'granular/family-clarity DSP pass missing')
 require('Additive and granular families remain clearly distinct' in signature and 'Granular and spectral-resynthesis families remain clearly distinct' in signature,'synthesis-family regression coverage missing')
 require('nearest synthesis-contract region' in signature and 'creatures differ in stereo law' in signature and 'creatures differ in temporal motion' in signature,'behavioral-region regression coverage missing')
+require('max correlation' in signature and 'near-identical waveform' in signature,'perceptual creature-collapse regression missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
  if f.is_file() and f.suffix in{'.h','.cpp','.c','.mm'}:
@@ -75,5 +77,7 @@ print('PASS  Soul Glass uses real message-thread spectrum + creature-aware famil
 print('PASS  default UX is Summon -> Transform -> Witness -> Grimoire; laboratory is progressive disclosure')
 print('PASS  six creature pedestals expose only summon + transform + activity and drive visual focus')
 print('PASS  pedestal AWAKE/behavior uses actual per-creature audio + physical telemetry')
+print('PASS  pedestal shows live SOUL energy + named physical behavior states')
+print('PASS  creature identity survives shared filtering and pairwise correlation QA')
 print('PASS  one pedestal focus event synchronizes portrait, Soul Glass and Grimoire guide')
 print('PASS  independent release Source/ naming scan')
