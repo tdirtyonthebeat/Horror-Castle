@@ -68,6 +68,14 @@ public:
         g.setColour(accent.withAlpha(.08f+.92f*energy));g.fillEllipse(lamp.expanded(energy*2.5f));
         g.setColour(juce::Colour(0xff9c9385));g.setFont(juce::FontOptions(7.f));
         g.drawText(energy>.025f?"AWAKE":"DORMANT",getWidth()-76,7,50,12,juce::Justification::centredRight);
+
+        const float behavior=juce::jlimit(0.f,1.f,behaviorMeter(type,crypt));
+        auto meter=juce::Rectangle<float>(12.f,181.f,(float)getWidth()-24.f,7.f);
+        g.setColour(juce::Colour(0xff17191d));g.fillRoundedRectangle(meter,2.f);
+        g.setColour(accent.withAlpha(.26f+.62f*energy));g.fillRoundedRectangle(meter.withWidth(meter.getWidth()*energy),2.f);
+        g.setColour(juce::Colour(0xffa69b8c));g.setFont(juce::FontOptions(7.f));
+        g.drawText("SOUL "+juce::String((int)std::lround(energy*100.f))+"%  //  "+behaviorName(type,crypt,behavior),
+                   9,190,getWidth()-18,12,juce::Justification::centred);
     }
 
     void resized() override
@@ -80,6 +88,17 @@ public:
 private:
     float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
+
+    juce::String behaviorName(int type,bool crypt,float behavior) const
+    {
+        if(crypt&&type==17)return behavior>.55f?"COLLAPSING":behavior>.18f?"TURBULENT":"SPINNING";
+        if(crypt&&type==16)return behavior>.55f?"ARCING":behavior>.18f?"CHARGED":"HAUNTING";
+        if(!crypt&&type==17)return behavior>.55f?"OVERBLOWN":behavior>.18f?"LOCKED":"BREATHING";
+        if(!crypt&&type==16)return behavior>.55f?"RADIANT":behavior>.18f?"ALIGNED":"DRIFTING";
+        if(crypt&&type==9)return energy>.32f?"DECOMPOSING":"RESYNTHESIZING";
+        if(!crypt&&type==15)return energy>.32f?"FRACTURING":"REFLECTING";
+        return energy>.42f?"MANIFEST":"STIRRING";
+    }
 
     float behaviorMeter(int type,bool crypt) const
     {
