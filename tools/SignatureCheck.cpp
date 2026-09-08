@@ -77,6 +77,11 @@ float lowBodyProxy(const Render& r){
     return total>1.0e-12?(float)std::sqrt(low/total):0.f;
 }
 float difference(const Render& a,const Render& b){const size_t n=std::min(a.left.size(),b.left.size());double s=0;for(size_t i=0;i<n;++i){const double d=a.left[i]-b.left[i];s+=d*d;}const float d=n?(float)std::sqrt(s/(double)n):0.f;return d/std::max(.0001f,std::max(rms(a),rms(b)));}
+float waveformCorrelation(const Render& a,const Render& b){
+    const size_t n=std::min(a.left.size(),b.left.size());if(n<2)return 1.f;
+    double ab=0,aa=0,bb=0;for(size_t i=0;i<n;++i){const double x=a.left[i],y=b.left[i];ab+=x*y;aa+=x*x;bb+=y*y;}
+    return (aa>1.0e-12&&bb>1.0e-12)?(float)std::abs(ab/std::sqrt(aa*bb)):1.f;
+}
 float crestProxy(const Render& r){float peak=0.f;for(float x:r.left)peak=std::max(peak,std::abs(x));return peak/std::max(.0001f,rms(r));}
 float transientProxy(const Render& r){if(r.left.empty())return 0.f;const size_t n=std::min<size_t>(r.left.size(),2400);double a=0,b=0;for(size_t i=0;i<n;++i)a+=r.left[i]*r.left[i];for(size_t i=n;i<std::min(r.left.size(),n*4);++i)b+=r.left[i]*r.left[i];const float ar=n?(float)std::sqrt(a/n):0.f;const size_t bn=std::min(r.left.size(),n*4)-n;const float br=bn?(float)std::sqrt(b/bn):0.f;return ar/std::max(.0001f,br);}
 float stereoProxy(const Render& r){const size_t n=std::min(r.left.size(),r.right.size());double side=0,mid=0;for(size_t i=0;i<n;++i){const double l=r.left[i],rr=r.right[i];side+=(l-rr)*(l-rr);mid+=(l+rr)*(l+rr);}return mid>1.0e-12?(float)std::sqrt(side/mid):0.f;}
@@ -192,7 +197,7 @@ int main(int argc,char* argv[])
         std::vector<Render> fingerprints;
         fingerprints.reserve(18);
         bool allFinite=true, allMorph=true;
-        float nearest=1000.f;
+        float nearest=1000.f,maxCorrelation=0.f; int corrA=-1,corrB=-1;
         for(int type=0;type<18;++type)
         {
             auto base=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.24f);});
@@ -202,12 +207,17 @@ int main(int argc,char* argv[])
             fingerprints.push_back(std::move(base));
         }
         for(size_t i=0;i<fingerprints.size();++i)
-            for(size_t j=i+1;j<fingerprints.size();++j)
+            for(size_t j=i+1;j<fingerprints.size();++j){
                 nearest=std::min(nearest,difference(fingerprints[i],fingerprints[j]));
-        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest generator fingerprint distance="<<nearest<<"\n";
+                const float corr=waveformCorrelation(fingerprints[i],fingerprints[j]);
+                if(corr>maxCorrelation){maxCorrelation=corr;corrA=(int)i;corrB=(int)j;}
+            }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest generator fingerprint distance="<<nearest
+                 <<" max correlation="<<maxCorrelation<<" pair="<<corrA<<"/"<<corrB<<"\n";
         check(allFinite,isCrypt?"all 18 CRYPT generators are audible and finite":"all 18 TOWER generators are audible and finite");
         check(allMorph,isCrypt?"MORPH audibly changes every CRYPT generator":"MORPH audibly changes every TOWER generator");
         check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
+        check(maxCorrelation<.9985f,isCrypt?"no CRYPT creature collapses into a near-identical waveform":"no TOWER creature collapses into a near-identical waveform");
         float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f,stereoMin=1000.f,stereoMax=0.f,fluxMin=1000.f,fluxMax=0.f;
         for(const auto& fp:fingerprints){
             const float cr=crestProxy(fp),tr=transientProxy(fp),st=stereoProxy(fp),fl=temporalFluxProxy(fp);
