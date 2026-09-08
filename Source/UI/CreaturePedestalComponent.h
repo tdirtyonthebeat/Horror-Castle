@@ -16,14 +16,14 @@ public:
       : processor(p), state(p.getParameterState()), scene(room), index(slot)
     {
         const bool crypt=scene=="crypt"; accent=crypt?juce::Colour(0xffc65b55):juce::Colour(0xffaa7ac8);
-        if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene,index,"type"))))
+        if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type"))))
             for(int i=0;i<choice->choices.size();++i) creature.addItem(choice->choices[i],i+1);
         creature.setTextWhenNothingSelected("SUMMON CREATURE");
         creature.setColour(juce::ComboBox::backgroundColourId,juce::Colour(0xff07090c));
         creature.setColour(juce::ComboBox::textColourId,juce::Colour(0xffddd1bd));
         creature.setColour(juce::ComboBox::outlineColourId,accent.withAlpha(.55f));
         addAndMakeVisible(creature);
-        typeA=std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state,param::id(scene,index,"type"),creature);
+        typeA=std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state,param::id(scene.toRawUTF8(),index,"type"),creature);
         creature.onChange=[this]{signalFocus();};
 
         morph.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
@@ -32,7 +32,7 @@ public:
         morph.setColour(juce::Slider::rotarySliderOutlineColourId,juce::Colour(0xff242127));
         morph.setColour(juce::Slider::thumbColourId,juce::Colour(0xffe0d3bd));
         addAndMakeVisible(morph);
-        morphA=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state,param::id(scene,index,"shape"),morph);
+        morphA=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state,param::id(scene.toRawUTF8(),index,"shape"),morph);
         morph.onDragStart=[this]{signalFocus();};
         startTimerHz(30);
     }
@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene,index,leaf)))return p->load();return 0.f;}
+    float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
 
     float behaviorMeter(int type,bool crypt) const
