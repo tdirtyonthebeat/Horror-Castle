@@ -62,6 +62,7 @@ Render renderAt(double sampleRate,int block,double seconds,const std::function<v
 Render render(double seconds,const std::function<void(HarnessProcessor&)>& configure){return renderAt(48000.0,256,seconds,configure);}
 
 float rms(const Render& r){double s=0;for(float x:r.left)s+=x*x;return r.left.empty()?0.f:(float)std::sqrt(s/(double)r.left.size());}
+float dcOffsetProxy(const Render& r){if(r.left.empty())return 0.f;double m=0;for(float x:r.left)m+=x;return (float)std::abs(m/(double)r.left.size());}
 float brightnessProxy(const Render& r){
     if(r.left.size()<2)return 0.f;
     double d=0,s=0;
@@ -200,10 +201,13 @@ int main(int argc,char* argv[])
         float nearest=1000.f,maxCorrelation=0.f; int corrA=-1,corrB=-1;
         for(int type=0;type<18;++type)
         {
-            auto base=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.24f);});
-            auto moved=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.86f);});
-            allFinite=allFinite&&finite(base)&&finite(moved)&&rms(base)>.00015f;
-            allMorph=allMorph&&difference(base,moved)>.006f;
+            auto base=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.18f);});
+            auto middle=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.52f);});
+            auto moved=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.88f);});
+            allFinite=allFinite&&finite(base)&&finite(middle)&&finite(moved)&&rms(base)>.00015f;
+            const float lowMid=difference(base,middle),midHigh=difference(middle,moved),lowHigh=difference(base,moved);
+            allMorph=allMorph&&lowMid>.004f&&midHigh>.004f&&lowHigh>.010f;
+            allFinite=allFinite&&dcOffsetProxy(base)<.035f&&dcOffsetProxy(middle)<.035f&&dcOffsetProxy(moved)<.035f;
             fingerprints.push_back(std::move(base));
         }
         for(size_t i=0;i<fingerprints.size();++i)
@@ -214,8 +218,8 @@ int main(int argc,char* argv[])
             }
         std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest generator fingerprint distance="<<nearest
                  <<" max correlation="<<maxCorrelation<<" pair="<<corrA<<"/"<<corrB<<"\n";
-        check(allFinite,isCrypt?"all 18 CRYPT generators are audible and finite":"all 18 TOWER generators are audible and finite");
-        check(allMorph,isCrypt?"MORPH audibly changes every CRYPT generator":"MORPH audibly changes every TOWER generator");
+        check(allMorph,isCrypt?"every CRYPT MORPH has audible low/mid/high stages":"every TOWER MORPH has audible low/mid/high stages");
+        check(allFinite,isCrypt?"CRYPT creature outputs stay finite, audible and DC-clean":"TOWER creature outputs stay finite, audible and DC-clean");
         check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
         check(maxCorrelation<.9985f,isCrypt?"no CRYPT creature collapses into a near-identical waveform":"no TOWER creature collapses into a near-identical waveform");
         float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f,stereoMin=1000.f,stereoMax=0.f,fluxMin=1000.f,fluxMax=0.f;
