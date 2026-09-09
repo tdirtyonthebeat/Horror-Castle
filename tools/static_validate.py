@@ -52,6 +52,7 @@ require('oscillator-granular creature' in scene and 'contract.clarity' in scene,
 require('Additive and granular families remain clearly distinct' in signature and 'Granular and spectral-resynthesis families remain clearly distinct' in signature,'synthesis-family regression coverage missing')
 require('nearest synthesis-contract region' in signature and 'creatures differ in stereo law' in signature and 'creatures differ in temporal motion' in signature,'behavioral-region regression coverage missing')
 require('max correlation' in signature and 'near-identical waveform' in signature,'perceptual creature-collapse regression missing')
+require('low/mid/high stages' in signature and 'DC-clean' in signature,'clean three-stage MORPH regression missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
  if f.is_file() and f.suffix in{'.h','.cpp','.c','.mm'}:
@@ -79,5 +80,7 @@ print('PASS  six creature pedestals expose only summon + transform + activity an
 print('PASS  pedestal AWAKE/behavior uses actual per-creature audio + physical telemetry')
 print('PASS  pedestal shows live SOUL energy + named physical behavior states')
 print('PASS  creature identity survives shared filtering and pairwise correlation QA')
+print('PASS  summoned creatures auto-awaken if dormant')
+print('PASS  MORPH is tested as a clean low/mid/high audible trajectory')
 print('PASS  one pedestal focus event synchronizes portrait, Soul Glass and Grimoire guide')
 print('PASS  independent release Source/ naming scan')
