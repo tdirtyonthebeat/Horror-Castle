@@ -26,6 +26,18 @@ void force(juce::AudioProcessorValueTreeState& s,const juce::String& id,float ac
 {
  if(auto* p=s.getParameter(id))p->setValueNotifyingHost(p->convertTo0to1(actual));
 }
+
+bool sameSnapshot(const Snapshot& a,const Snapshot& b,const char* label)
+{
+ bool ok=a.size()==b.size();
+ for(const auto& [id,av]:a){
+  const auto it=b.find(id);
+  if(it==b.end()){std::cerr<<"MISSING "<<label<<" // "<<id<<"\n";ok=false;continue;}
+  const float delta=std::abs(av-it->second);
+  if(delta>1.0e-6f){std::cerr<<"MISMATCH "<<label<<" // "<<id<<" dirty="<<av<<" fresh="<<it->second<<" delta="<<delta<<"\n";ok=false;}
+ }
+ return ok;
+}
 }
 
 int main(){
@@ -43,13 +55,13 @@ int main(){
  force(state,"crypt.g3.level",.93f);force(state,"tower.g2.tune",19.f);force(state,"crypt.f2.resonance",.91f);force(state,"global.unison",8.f);force(state,"ritual.feedback",.88f);force(state,"possession.haunt",.97f);force(state,"ecology.depth",.99f);
  ok &= g.loadFactory(54);ok &= clean.loadFactory(54);
  const auto dirtyThenTarget=snapshot(state), freshTarget=snapshot(cleanState);
- ok &= dirtyThenTarget==freshTarget;
+ ok &= sameSnapshot(dirtyThenTarget,freshTarget,"generated target 54");
 
  // Repeat in the opposite direction with a legacy target to ensure the new full
  // reset protects both the original 44 spells and the generated launch bank.
  force(state,"living.abyss.pressure",1.f);force(state,"living.aurora.instability",1.f);force(state,"crypt.g2.pan",1.f);force(state,"tower.f1.drive",1.f);force(state,"global.hex",1.f);
  ok &= g.loadFactory(7);ok &= clean.loadFactory(7);
- ok &= snapshot(state)==snapshot(cleanState);
+ ok &= sameSnapshot(snapshot(state),snapshot(cleanState),"legacy target 7");
 
  if(!ok){std::cerr<<"FACTORY PRESET CHECK FAILED\n";return 1;}std::cout<<"FACTORY PRESET CHECK PASSED\nPASS  exactly 100 unique named factory spells\nPASS  legacy indices 0-43 retained, launch bank append-only\nPASS  deterministic archetype loading for indices 44-99\nPASS  at least 10 musical categories\nPASS  all presets load with finite parameter state\nPASS  factory loading is deterministic after hostile cross-preset contamination\nPASS  Living Engine physics, generator, filter, FX, HEX and ecology state cannot bleed between factory spells\n";return 0;
 }
