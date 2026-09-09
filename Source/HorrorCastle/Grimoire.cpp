@@ -29,10 +29,13 @@ void Grimoire::commonReset()
         {
             const auto p=[&](const char* control){return param::id(sceneName,g,control);};
             set(p("type"),(float)(14+g));
-            set(p("level"),g==1?(isCrypt?.72f:.58f):0.f);
+            set(p("level"),g==1?(isCrypt?.72f:.62f):0.f);
             set(p("pan"),0.f); set(p("tune"),0.f);
             set(p("shape"),g==1?.58f:(g==2?.70f:.82f));
-            set(p("spread"),0.f); set(p("enabled"),1.f);
+            set(p("spread"),0.f);
+            // Factory spells start from a silent secondary oscillator and disabled
+            // hidden slots; individual spells explicitly awaken what they use.
+            set(p("enabled"),(isCrypt&&g==1)?1.f:0.f);
         }
         set(param::noise(sceneName,"enabled"),0.f); set(param::noise(sceneName,"level"),.08f);
         for(int f=1;f<=2;++f)
@@ -78,6 +81,9 @@ void Grimoire::loadGeneratedFactory(int archetype,std::uint32_t seed)
     auto u=[&](){return seeded01(seed);}; auto vary=[&](float center,float radius){return juce::jlimit(0.f,1.f,center+(u()*2.f-1.f)*radius);};
     const float grave=vary(.34f,.16f),character=vary(.78f,.18f);
     set("crypt.character",character);set("tower.character",vary(.76f,.18f));set("grave.reverb",grave);set("grave.delay",vary(.16f,.12f));set("grave.feedback",vary(.25f,.16f));
+    // Generated factory patches use the two public oscillators only. Their level
+    // values still provide the curated blend; enable follows audible participation.
+    set("crypt.g1.enabled",1.f); set("tower.g1.enabled",1.f);
     switch(archetype){
       case 0:set("crypt.g1.type",u()>.5f?17.f:15.f);set("crypt.g1.level",.78f);set("crypt.g1.shape",vary(.78f,.18f));set("crypt.g2.type",u()>.55f?14.f:13.f);set("crypt.g2.level",.28f);set("crypt.g2.tune",-12.f);set("tower.master",vary(.16f,.10f));set("crypt.f1.cutoff",vary(.075f,.035f));set("grave.reverb",vary(.18f,.10f));break;
       case 1:set("crypt.g1.type",u()>.5f?12.f:9.f);set("tower.g1.type",u()>.45f?16.f:17.f);set("crypt.g1.level",.48f);set("tower.g1.level",.64f);set("tower.g1.shape",vary(.72f,.20f));set("global.glide",vary(.16f,.12f));set("grave.reverb",vary(.28f,.12f));setHex(1,7,2,12,vary(.38f,.18f));break;
@@ -141,7 +147,12 @@ bool Grimoire::loadFactory(int index)
       case 42:set("crypt.g1.type",17.f);set("crypt.g2.type",16.f);set("tower.g1.type",17.f);set("tower.g2.type",16.f);set("ecology.enabled",1.f);set("ecology.depth",.76f);set("ritual.mode",3.f);set("ritual.mix",.30f);set("grave.reverb",.48f);break;
       case 43:set("crypt.g1.type",15.f);set("crypt.g2.type",17.f);set("tower.g1.type",15.f);set("tower.g2.type",17.f);set("ecology.enabled",1.f);set("ecology.depth",.62f);set("grave.reverb",.56f);set("grave.delay",.22f);break;
       default:return false;
-    } return true;
+    }
+    // Legacy spells predate explicit oscillator power. Derive power from their
+    // authored room/master intent while keeping hidden compatibility slots intact.
+    set("crypt.g1.enabled",1.f);
+    set("tower.g1.enabled",1.f);
+    return true;
 }
 
 juce::File Grimoire::getUserDirectory() const{auto dir=juce::File::getSpecialLocation(juce::File::userDocumentsDirectory).getChildFile("SleepFighterStudios").getChildFile("Horror Castle").getChildFile("Grimoire");dir.createDirectory();return dir;}
