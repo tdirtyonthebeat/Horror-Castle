@@ -16,28 +16,24 @@ class LivingCastleEditor final : public HorrorCastleEditor
 {
 public:
     explicit LivingCastleEditor(HorrorCastleProcessor& p)
-        : HorrorCastleEditor(p), pedestals{{
+        : HorrorCastleEditor(p), oscillators{{
             std::make_unique<CreaturePedestalComponent>(p,"crypt",1),
-            std::make_unique<CreaturePedestalComponent>(p,"crypt",2),
-            std::make_unique<CreaturePedestalComponent>(p,"crypt",3),
-            std::make_unique<CreaturePedestalComponent>(p,"tower",1),
-            std::make_unique<CreaturePedestalComponent>(p,"tower",2),
-            std::make_unique<CreaturePedestalComponent>(p,"tower",3)}}, chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
+            std::make_unique<CreaturePedestalComponent>(p,"tower",1)}}, chrome(p.getParameterState()), physics(p.getParameterState()), nervousSystem(p), creaturePortrait(p.getParameterState()), soulGlass(p)
     {
         addAndMakeVisible(chrome);
         chrome.toBack();
         addAndMakeVisible(creaturePortrait);
         addAndMakeVisible(soulGlass);
-        for(auto& pedestal:pedestals)addAndMakeVisible(*pedestal);
-        for(auto& pedestal:pedestals)pedestal->onFocus=[this](bool crypt,int type,int slot){
+        for(auto& pedestal:oscillators)addAndMakeVisible(*pedestal);
+        for(auto& pedestal:oscillators)pedestal->onFocus=[this](bool crypt,int type,int slot){
             focusedCrypt=crypt;focusedType=type;focusedSlot=slot;
-            for(auto& p:pedestals)p->setFocused(false);
-            pedestals[(size_t)((crypt?0:3)+slot)]->setFocused(true);
+            for(auto& p:oscillators)p->setFocused(false);
+            oscillators[(size_t)(crypt?0:1)]->setFocused(true);
             creaturePortrait.focusCreature(crypt,type);
             soulGlass.focusCreature(crypt,type);
             showGrimoireCreatureGuide(crypt,type);
         };
-        pedestals[0]->setFocused(true);
+        oscillators[0]->setFocused(true);
 
         flowTitle.setText("SUMMON  →  TRANSFORM  →  WITNESS  →  GRIMOIRE",juce::dontSendNotification);
         flowTitle.setJustificationType(juce::Justification::centred);
@@ -122,15 +118,16 @@ public:
         // The lower left is now the summoned creature, not a decorative book.
         // Soul Glass sits between the creature and the right-hand Grimoire,
         // preserving the reference composition while making the sound visible.
-        // Six ritual pedestals replace the old generator strips in Performance.
-        for(int i=0;i<3;++i)pedestals[(size_t)i]->setBounds(bounds(138+i*128,112,118,292));
-        for(int i=0;i<3;++i)pedestals[(size_t)(i+3)]->setBounds(bounds(824+i*128,112,118,292));
+        // Performance is deliberately two-oscillator: one CRYPT creature and one
+        // TOWER creature. The Laboratory retains the legacy three-slot machinery.
+        oscillators[0]->setBounds(bounds(132,112,360,292));
+        oscillators[1]->setBounds(bounds(824,112,360,292));
         creaturePortrait.setBounds(bounds(24,805,400,245));
         soulGlass.setBounds(bounds(438,805,390,245));
     }
 
 private:
-    std::array<std::unique_ptr<CreaturePedestalComponent>,6> pedestals;
+    std::array<std::unique_ptr<CreaturePedestalComponent>,2> oscillators;
     LivingCastleChrome chrome;
     LivingEngineMacroPanel physics;
     NervousSystemComponent nervousSystem;
