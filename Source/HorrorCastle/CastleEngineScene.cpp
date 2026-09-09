@@ -183,6 +183,12 @@ auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float
     y=std::tanh((y+edge*contract.clarity*(1.0f+1.35f*familyMorph))
                 *(1.0f+.18f*contract.nonlinearDrive*familyMorph));
 
+    // Creature-local DC cleanup keeps aggressive asymmetry/folding crisp without
+    // shaving musical bass. The ~15 Hz pole is below the useful synthesis body.
+    float& dc=isCrypt?v.cryptCreatureDC[(size_t)slot]:v.towerCreatureDC[(size_t)slot];
+    dc+=.002f*(y-dc);
+    y-=dc;
+
     // Stereo is also a declared family law. Keep it subtle here: the later
     // room-pan stage remains in charge of placement, while this creates motion
     // characteristic of the synthesis family itself.
