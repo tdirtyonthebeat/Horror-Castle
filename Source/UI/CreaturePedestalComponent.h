@@ -24,7 +24,7 @@ public:
         creature.setColour(juce::ComboBox::outlineColourId,accent.withAlpha(.55f));
         addAndMakeVisible(creature);
         typeA=std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state,param::id(scene.toRawUTF8(),index,"type"),creature);
-        creature.onChange=[this]{signalFocus();};
+        creature.onChange=[this]{awakenIfDormant();signalFocus();};
 
         morph.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         morph.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
@@ -87,6 +87,18 @@ public:
 
 private:
     float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
+    void awakenIfDormant()
+    {
+        if(auto* enabled=state.getParameter(param::id(scene.toRawUTF8(),index,"enabled")))
+            if(enabled->getValue()<.5f)enabled->setValueNotifyingHost(1.f);
+        if(auto* level=state.getParameter(param::id(scene.toRawUTF8(),index,"level"))){
+            const float actual=level->convertFrom0to1(level->getValue());
+            if(actual<.08f){
+                const float target=(scene=="crypt")?.68f:.62f;
+                level->setValueNotifyingHost(level->convertTo0to1(target));
+            }
+        }
+    }
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
 
     juce::String behaviorName(int type,bool crypt,float behavior) const
