@@ -24,7 +24,7 @@ public:
         creature.setColour(juce::ComboBox::outlineColourId,accent.withAlpha(.55f));
         addAndMakeVisible(creature);
         typeA=std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state,param::id(scene.toRawUTF8(),index,"type"),creature);
-        creature.onChange=[this]{awakenIfDormant();signalFocus();};
+        creature.onChange=[this]{signalFocus();};
 
         morph.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         morph.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
@@ -34,6 +34,17 @@ public:
         addAndMakeVisible(morph);
         morphA=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(state,param::id(scene.toRawUTF8(),index,"shape"),morph);
         morph.onDragStart=[this]{signalFocus();};
+
+        power.setButtonText("ON");
+        power.setClickingTogglesState(true);
+        power.setColour(juce::TextButton::buttonColourId,juce::Colour(0xff090b0e));
+        power.setColour(juce::TextButton::buttonOnColourId,accent.withAlpha(.34f));
+        power.setColour(juce::TextButton::textColourOffId,juce::Colour(0xff8f887e));
+        power.setColour(juce::TextButton::textColourOnId,juce::Colour(0xfff1e2c8));
+        addAndMakeVisible(power);
+        enabledA=std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment>(
+            state,param::id(scene.toRawUTF8(),index,"enabled"),power);
+        power.onClick=[this]{power.setButtonText(power.getToggleState()?"ON":"OFF");signalFocus();};
         startTimerHz(30);
     }
 
@@ -57,7 +68,7 @@ public:
         drawBehavior(g,altar,type,crypt);
 
         g.setColour(accent);g.setFont(juce::Font(juce::FontOptions(10.f)).boldened());
-        g.drawText("PEDESTAL "+juce::String(index),10,7,getWidth()-20,15,juce::Justification::centredLeft);
+        g.drawText(crypt?"OSCILLATOR A // CRYPT":"OSCILLATOR B // TOWER",10,7,getWidth()-86,15,juce::Justification::centredLeft);
         g.setColour(juce::Colour(0xffb8ac9a));g.setFont(juce::FontOptions(8.f));
         g.drawFittedText(law.family,10,24,getWidth()-20,12,juce::Justification::centredLeft,1);
 
@@ -67,7 +78,8 @@ public:
         const auto lamp=juce::Rectangle<float>((float)getWidth()-22.f,9.f,9.f,9.f);
         g.setColour(accent.withAlpha(.08f+.92f*energy));g.fillEllipse(lamp.expanded(energy*2.5f));
         g.setColour(juce::Colour(0xff9c9385));g.setFont(juce::FontOptions(7.f));
-        g.drawText(energy>.025f?"AWAKE":"DORMANT",getWidth()-76,7,50,12,juce::Justification::centredRight);
+        const bool powered=read("enabled")>.5f;
+        g.drawText(powered?(energy>.025f?"AWAKE":"READY"):"OFF",getWidth()-76,7,50,12,juce::Justification::centredRight);
 
         const float behavior=juce::jlimit(0.f,1.f,behaviorMeter(type,crypt));
         auto meter=juce::Rectangle<float>(12.f,181.f,(float)getWidth()-24.f,7.f);
@@ -80,25 +92,14 @@ public:
 
     void resized() override
     {
-        creature.setBounds(9,40,getWidth()-18,24);
-        const int d=juce::jmin(82,getHeight()-118);
-        morph.setBounds((getWidth()-d)/2,getHeight()-116,d,d);
+        power.setBounds(getWidth()-70,30,58,24);
+        creature.setBounds(12,64,getWidth()-24,30);
+        const int d=juce::jmin(118,getHeight()-132);
+        morph.setBounds((getWidth()-d)/2,getHeight()-126,d,d);
     }
 
 private:
     float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
-    void awakenIfDormant()
-    {
-        if(auto* enabled=state.getParameter(param::id(scene.toRawUTF8(),index,"enabled")))
-            if(enabled->getValue()<.5f)enabled->setValueNotifyingHost(1.f);
-        if(auto* level=state.getParameter(param::id(scene.toRawUTF8(),index,"level"))){
-            const float actual=level->convertFrom0to1(level->getValue());
-            if(actual<.08f){
-                const float target=(scene=="crypt")?.68f:.62f;
-                level->setValueNotifyingHost(level->convertTo0to1(target));
-            }
-        }
-    }
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
 
     juce::String behaviorName(int type,bool crypt,float behavior) const
@@ -153,8 +154,9 @@ private:
     HorrorCastleProcessor& processor;
     juce::AudioProcessorValueTreeState& state;
     juce::String scene; int index=1; float energy=0.f,phase=0.f; bool focused=false; juce::Colour accent;
-    juce::ComboBox creature; juce::Slider morph;
+    juce::ComboBox creature; juce::Slider morph; juce::TextButton power;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> typeA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> morphA;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enabledA;
 };
 } // namespace horrorcastle
