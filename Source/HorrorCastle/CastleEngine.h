@@ -63,6 +63,7 @@ private:
   // Per-slot one-sample memories let each synthesis family own a tiny
   // clarity/edge stage without sharing a homogenising global processor.
   std::array<float,3> cryptCreatureMemory{}, towerCreatureMemory{};
+  std::array<float,3> cryptCreatureDC{}, towerCreatureDC{};
   std::array<float,3> cryptCreatureBlockPeak{}, towerCreatureBlockPeak{};
   std::array<SpectralCorpseEngine::VoiceState,3> cryptCorpse{};
   std::array<RitualFMEngine::VoiceState,3> cryptRitualFM{};
