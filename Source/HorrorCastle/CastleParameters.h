@@ -32,14 +32,17 @@ inline juce::AudioProcessorValueTreeState::ParameterLayout createLayout()
             else
                 addChoice(p("type"), juce::String(s) + " " + genNames[g] + " Type",
                           {"VA", "Wavetable", "FM", "PM", "Vector", "Chip", "Noise", "Resonator", "Bell Glass", "Spectral Spire", "Astral FM", "Prism", "Reliquary", "Choir", "Orrery", "Mirror", "Aurora", "Siren"}, defaultType);
-            const float defaultLevel = (g == 0) ? (sceneIsCrypt ? .72f : .58f) : 0.f;
+            const float defaultLevel = (g == 0) ? (sceneIsCrypt ? .72f : .62f) : 0.f;
             addFloat(p("level"), juce::String(s) + " " + genNames[g] + " Level", 0.f, 1.f, defaultLevel);
             addFloat(p("pan"), juce::String(s) + " " + genNames[g] + " Pan", -1.f, 1.f, 0.f);
             addFloat(p("tune"), juce::String(s) + " " + genNames[g] + " Tune", -24.f, 24.f, 0.f);
             const float defaultShape = (g == 0) ? .58f : (g == 1 ? .70f : .82f);
             addFloat(p("shape"), juce::String(s) + " " + genNames[g] + " Shape", 0.f, 1.f, defaultShape);
             addFloat(p("spread"), juce::String(s) + " " + genNames[g] + " Spread", 0.f, 1.f, 0.f);
-            addBool(p("enabled"), juce::String(s) + " " + genNames[g] + " Enabled", true);
+            // INIT is a single-oscillator audition: OSC A is on, OSC B is ready
+            // but off. Hidden legacy slots stay disabled until a preset needs them.
+            const bool defaultEnabled = sceneIsCrypt ? (g == 0) : false;
+            addBool(p("enabled"), juce::String(s) + " " + genNames[g] + " Enabled", defaultEnabled);
         }
         addBool(noise(s, "enabled"), juce::String(s) + " Noise", false);
         addFloat(noise(s, "level"), juce::String(s) + " Noise Level", 0.f, 1.f, .08f);
