@@ -57,6 +57,7 @@ require('nearest synthesis-contract region' in signature and 'creatures differ i
 require('max correlation' in signature and 'near-identical waveform' in signature,'perceptual creature-collapse regression missing')
 require('public-roster nearest' in signature and 'public CRYPT creatures are clearly separated' in signature and 'public TOWER creatures are clearly separated' in signature,'curated public-roster separation regression missing')
 require('TOWER room no longer imposes Bell Glass ringing on every creature' in signature,'shared bell-ringing regression missing')
+require('celestial=bellA' not in scene and 'underbody=sub' not in scene,'shared pitched room coloration returned')
 require('low/mid/high stages' in signature and 'DC-clean' in signature,'clean three-stage MORPH regression missing')
 source_hits=[]
 for f in(root/'Source').rglob('*'):
