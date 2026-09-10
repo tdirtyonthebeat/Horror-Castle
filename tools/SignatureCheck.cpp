@@ -3,6 +3,7 @@
 #include "../Source/HorrorCastle/CastleParameters.h"
 #include "../Source/HorrorCastle/Grimoire.h"
 #include "../Source/HorrorCastle/SynthesisFamilyContract.h"
+#include "../Source/HorrorCastle/PerformanceCreatureRoster.h"
 #include <cmath>
 #include <iostream>
 #include <functional>
@@ -145,6 +146,15 @@ int main(int argc,char* argv[])
     check(towerBrightness>cryptBrightness*1.08f,"TOWER is spectrally brighter than CRYPT");
     check(cryptLow>towerLow*1.08f,"CRYPT carries more low-body energy than TOWER");
 
+    // Regression for the former TOWER-wide bell injection: non-bell public engines
+    // must remain materially different from Bell Glass and from one another.
+    auto towerPM=render(.9,[](auto& h){exclusiveEngine(h,false,3);});
+    auto towerVector=render(.9,[](auto& h){exclusiveEngine(h,false,4);});
+    auto towerSiren=render(.9,[](auto& h){exclusiveEngine(h,false,17);});
+    auto towerBellOnly=render(.9,[](auto& h){exclusiveEngine(h,false,8);});
+    check(difference(towerPM,towerBellOnly)>.08f&&difference(towerVector,towerBellOnly)>.08f&&difference(towerSiren,towerBellOnly)>.08f,
+          "TOWER room no longer imposes Bell Glass ringing on every creature");
+
 
     auto undercrypt=render(1.1,[](auto& h){exclusiveEngine(h,true,8);});
     auto corpse=render(1.1,[](auto& h){exclusiveEngine(h,true,9);});
@@ -191,8 +201,33 @@ int main(int argc,char* argv[])
         check(nearestContract>.025f,isCrypt?"CRYPT synthesis contracts occupy distinct regions":"TOWER synthesis contracts occupy distinct regions");
     }
 
-    // Full generator fingerprint gate: every selectable generator must produce a
-    // materially different neutral render, and its single MORPH control must move it.
+    // PUBLIC PERFORMANCE ROSTER gate: only the creatures exposed on the main
+    // two-oscillator surface need to meet the stricter "instantly different" bar.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<Render> publicFingerprints;
+        std::vector<int> types;
+        if(isCrypt) types.assign(performance_roster::crypt.begin(),performance_roster::crypt.end());
+        else types.assign(performance_roster::tower.begin(),performance_roster::tower.end());
+        float nearestPublic=1000.f,maxPublicCorr=0.f;
+        for(const int type:types)
+            publicFingerprints.push_back(render(.9,[isCrypt,type](auto& h){
+                exclusiveEngine(h,isCrypt,type);
+                setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.58f);
+            }));
+        for(size_t i=0;i<publicFingerprints.size();++i)
+            for(size_t j=i+1;j<publicFingerprints.size();++j){
+                nearestPublic=std::min(nearestPublic,difference(publicFingerprints[i],publicFingerprints[j]));
+                maxPublicCorr=std::max(maxPublicCorr,waveformCorrelation(publicFingerprints[i],publicFingerprints[j]));
+            }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" public-roster nearest="<<nearestPublic
+                 <<" correlation="<<maxPublicCorr<<" count="<<types.size()<<"\n";
+        check(nearestPublic>.045f,isCrypt?"public CRYPT creatures are clearly separated":"public TOWER creatures are clearly separated");
+        check(maxPublicCorr<.992f,isCrypt?"public CRYPT creatures avoid near-duplicate timbre":"public TOWER creatures avoid near-duplicate timbre");
+    }
+
+    // Full compatibility generator fingerprint gate: hidden/legacy engines still
+    // must remain valid and morphable even though Performance exposes a smaller roster.
     for(bool isCrypt : {true,false})
     {
         std::vector<Render> fingerprints;
