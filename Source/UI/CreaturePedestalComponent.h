@@ -67,21 +67,29 @@ public:
         const int type=juce::jlimit(0,17,(int)std::lround(read("type")));
         const auto& law=synthesis_contract::get(static_cast<GeneratorType>(type),crypt);
 
-        g.setColour(juce::Colour(0xdd05070a));g.fillRoundedRectangle(r,8.f);
-        g.setColour(accent.withAlpha((focused?.62f:.28f)+.32f*energy));g.drawRoundedRectangle(r.reduced(.7f),8.f,focused?2.0f:1.2f);
-        if(focused){g.setColour(accent.withAlpha(.08f+.12f*energy));g.fillRoundedRectangle(r.reduced(3.f),6.f);}
+        juce::ColourGradient chamber(juce::Colour(0xff06080c),r.getCentreX(),r.getY(),
+                                     juce::Colour(0xff111016),r.getCentreX(),r.getBottom(),false);
+        chamber.addColour(.58,accent.withAlpha(.08f+.10f*energy));
+        g.setGradientFill(chamber);g.fillRoundedRectangle(r,12.f);
+        g.setColour(juce::Colours::black.withAlpha(.55f));g.fillRoundedRectangle(r.reduced(8.f).withTrimmedTop(86.f),10.f);
+        g.setColour(accent.withAlpha((focused?.72f:.34f)+.24f*energy));g.drawRoundedRectangle(r.reduced(.8f),12.f,focused?2.2f:1.2f);
+        g.setColour(accent.withAlpha(.10f));g.drawRoundedRectangle(r.reduced(5.f),9.f,.8f);
 
-        // Live altar halo: real per-creature audio energy, not parameter level.
-        auto altar=juce::Rectangle<float>(18.f,108.f,(float)getWidth()-36.f,150.f);
-        g.setColour(accent.withAlpha(.025f+.18f*energy));g.fillEllipse(altar.reduced(8.f-energy*6.f));
+        // Live summoning chamber: manifestation geometry is synthesis-family aware
+        // and driven by actual audio energy + MORPH, never by a decorative animation.
+        auto altar=juce::Rectangle<float>(24.f,112.f,(float)getWidth()-48.f,158.f);
+        g.setColour(accent.withAlpha(.025f+.18f*energy));g.fillEllipse(altar.reduced(8.f-energy*8.f));
+        drawManifestation(g,altar,type,crypt,juce::jlimit(0.f,1.f,(float)morph.getValue()));
         drawBehavior(g,altar,type,crypt);
 
         g.setColour(accent);g.setFont(juce::Font(juce::FontOptions(10.f)).boldened());
         g.drawText(crypt?"OSCILLATOR A // CRYPT":"OSCILLATOR B // TOWER",10,7,getWidth()-86,15,juce::Justification::centredLeft);
-        g.setColour(juce::Colour(0xffb8ac9a));g.setFont(juce::FontOptions(8.5f));
-        g.drawFittedText(law.family,12,28,getWidth()-24,14,juce::Justification::centredLeft,1);
-        g.setColour(juce::Colour(0xff8e877d));g.setFont(juce::FontOptions(7.6f));
-        g.drawFittedText(juce::String("MORPH // ")+law.morphTrajectory,12,44,getWidth()-24,18,juce::Justification::centredLeft,2);
+        g.setColour(juce::Colour(0xfff0e2cd));g.setFont(juce::Font(juce::FontOptions(14.f)).boldened());
+        g.drawFittedText(law.creature,12,28,getWidth()-94,20,juce::Justification::centredLeft,1);
+        g.setColour(juce::Colour(0xffb8ac9a));g.setFont(juce::FontOptions(9.f));
+        g.drawFittedText(law.family,12,49,getWidth()-24,14,juce::Justification::centredLeft,1);
+        g.setColour(juce::Colour(0xff9f9689));g.setFont(juce::FontOptions(8.f));
+        g.drawFittedText(juce::String("TRANSFORMATION // ")+law.morphTrajectory,12,66,getWidth()-24,18,juce::Justification::centredLeft,2);
 
         g.setColour(juce::Colour(0xffd9ccb8));g.setFont(juce::Font(juce::FontOptions(9.f)).boldened());
         g.drawText("TRANSFORM",8,getHeight()-204,getWidth()-16,14,juce::Justification::centred);
@@ -112,6 +120,53 @@ public:
 private:
     float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
+
+    void drawManifestation(juce::Graphics& g,juce::Rectangle<float> a,int type,bool crypt,float morphValue) const
+    {
+        const auto gt=static_cast<GeneratorType>(type);
+        const auto c=a.getCentre();
+        const float e=juce::jlimit(0.f,1.f,energy);
+        g.setColour(accent.withAlpha(.10f+.42f*e));
+
+        if(crypt&&gt==GeneratorType::VA){ // WEREWOLF: widening jaw / unstable teeth
+            juce::Path jaw;jaw.startNewSubPath(c.x-a.getWidth()*.20f,c.y-a.getHeight()*.15f);
+            jaw.lineTo(c.x,c.y+a.getHeight()*(.10f+.12f*morphValue));jaw.lineTo(c.x+a.getWidth()*.20f,c.y-a.getHeight()*.15f);
+            for(int i=0;i<5;++i){const float x=c.x-a.getWidth()*.14f+i*a.getWidth()*.07f;g.drawLine(x,c.y-.05f*a.getHeight(),x+(i%2?4.f:-4.f),c.y+a.getHeight()*(.12f+.08f*morphValue),.8f+e);}
+            g.strokePath(jaw,juce::PathStrokeType(1.f+1.5f*e));
+        }else if(crypt&&gt==GeneratorType::Wavetable){ // VAMPIRE: spectral fangs
+            for(int i=0;i<7;++i){const float x=a.getX()+a.getWidth()*(.18f+i*.105f);const float h=a.getHeight()*(.08f+.30f*morphValue)*(i%2?.75f:1.f);g.drawLine(x,c.y-h,x,c.y+h,.8f+1.1f*e);}
+        }else if((crypt&&gt==GeneratorType::FM)||(!crypt&&gt==GeneratorType::ChamberIII)){ // FM constellations
+            for(int i=0;i<5;++i){const float ang=phase*(.35f+.12f*i)+i*1.2566f;const float rad=a.getWidth()*(.08f+.18f*morphValue)*(1.f+.12f*i);g.fillEllipse(c.x+std::cos(ang)*rad-2,c.y+std::sin(ang)*rad-2,4,4);}
+        }else if(crypt&&gt==GeneratorType::Noise){ // GHOUL cloud
+            for(int i=0;i<22;++i){const float x=a.getX()+std::fmod(i*.618f+phase*.03f,1.f)*a.getWidth();const float y=a.getY()+std::fmod(i*.414f+morphValue*.17f,1.f)*a.getHeight();const float s=1.5f+5.f*e*(.3f+.7f*morphValue);g.fillEllipse(x,y,s,s);}
+        }else if(crypt&&gt==GeneratorType::ChamberII){ // CORPSE decomposition
+            for(int i=0;i<12;++i){const float x=a.getX()+a.getWidth()*(i+.5f)/12.f;const float split=(i%2?1.f:-1.f)*morphValue*a.getWidth()*.04f;const float h=a.getHeight()*(.12f+.35f*std::abs(std::sin(i*.63f+phase)));g.drawLine(x,c.y-h*.5f,x+split,c.y+h*.5f,.8f+e);}
+        }else if(crypt&&gt==GeneratorType::ChamberVIII){ // ABYSS pressure rings
+            for(int i=0;i<4;++i){const float s=(.18f+i*.17f)*(1.f+.55f*morphValue)*juce::jmin(a.getWidth(),a.getHeight());g.drawEllipse(c.x-s*.5f,c.y-s*.5f,s,s,.7f+e*(i+1)*.25f);}
+        }else if(crypt&&gt==GeneratorType::ChamberIX){ // POLTERGEIST arcs
+            for(int i=0;i<6;++i){const float ang=i*1.047f+phase*(.4f+morphValue);const float rad=a.getWidth()*(.12f+.23f*morphValue);g.drawLine(c.x,c.y,c.x+std::cos(ang)*rad,c.y+std::sin(ang)*rad,.7f+1.8f*e);}
+        }else if(crypt&&gt==GeneratorType::ChamberX){ // VORTEX spiral
+            juce::Path p;for(int i=0;i<72;++i){const float t=i/71.f,ang=t*(8.f+14.f*morphValue)+phase*.25f,rad=t*a.getWidth()*.34f*(.55f+.45f*e);const float x=c.x+std::cos(ang)*rad,y=c.y+std::sin(ang)*rad;if(i==0)p.startNewSubPath(x,y);else p.lineTo(x,y);}g.strokePath(p,juce::PathStrokeType(.9f+1.3f*e));
+        }else if(!crypt&&gt==GeneratorType::PM){ // WITCH phase warp
+            for(int i=0;i<3;++i){auto rr=a.reduced(20.f+i*18.f);g.drawEllipse(rr.translated(std::sin(phase+i)*6.f*morphValue,0.f),.8f+e);}
+        }else if(!crypt&&gt==GeneratorType::Vector){ // SHAPESHIFTER
+            juce::Path d;d.startNewSubPath(c.x,c.y-a.getHeight()*.28f);d.lineTo(c.x+a.getWidth()*(.18f+.10f*morphValue),c.y);d.lineTo(c.x,c.y+a.getHeight()*.28f);d.lineTo(c.x-a.getWidth()*(.18f+.10f*morphValue),c.y);d.closeSubPath();g.strokePath(d,juce::PathStrokeType(1.f+e));
+        }else if(!crypt&&gt==GeneratorType::ChamberI){ // BELL GLASS
+            for(int i=0;i<3;++i){const float s=a.getHeight()*(.22f+i*.18f)*(1.f+.15f*morphValue);g.drawEllipse(c.x-s*.5f,c.y-s*.5f,s,s,.7f+e);}
+        }else if(!crypt&&gt==GeneratorType::ChamberIV){ // PRISM grains/shards
+            for(int i=0;i<18;++i){const float ang=i*.77f+phase*.12f;const float rad=a.getWidth()*(.05f+.27f*morphValue)*std::fmod(i*.61f,1.f);juce::Path shard;const float x=c.x+std::cos(ang)*rad,y=c.y+std::sin(ang)*rad;shard.addTriangle(x,y,x+3.f+7.f*morphValue,y-5.f,x-2.f,y+5.f);g.fillPath(shard);}
+        }else if(!crypt&&gt==GeneratorType::ChamberVI){ // CHOIR mouths/formants
+            for(int i=0;i<5;++i){const float x=c.x+(i-2)*a.getWidth()*.10f;const float w=16.f+20.f*morphValue;g.drawEllipse(x-w*.5f,c.y-6.f,w,12.f,.8f+e);}
+        }else if(!crypt&&gt==GeneratorType::ChamberVIII){ // MIRROR fracture
+            for(int i=0;i<9;++i){const float x=a.getX()+a.getWidth()*(i+.5f)/9.f;const float off=std::sin(i*1.9f+phase)*morphValue*12.f;g.drawLine(x,c.y-a.getHeight()*.24f,x+off,c.y+a.getHeight()*.24f,.8f+e);}
+        }else if(!crypt&&gt==GeneratorType::ChamberIX){ // AURORA field
+            for(int i=0;i<4;++i){juce::Path p;for(int x=0;x<40;++x){const float xx=a.getX()+a.getWidth()*x/39.f;const float yy=c.y+(i-1.5f)*11.f+std::sin(x*.22f+phase+i)*a.getHeight()*.06f*(.4f+morphValue);if(x==0)p.startNewSubPath(xx,yy);else p.lineTo(xx,yy);}g.strokePath(p,juce::PathStrokeType(.8f+e));}
+        }else if(!crypt&&gt==GeneratorType::ChamberX){ // SIREN aperture/jet
+            const float spread=6.f+26.f*morphValue;for(int i=-1;i<=1;++i)g.drawLine(a.getX()+12,c.y+i*5.f,a.getRight()-12,c.y+i*spread,.8f+1.1f*e);
+        }else{
+            g.drawEllipse(a.reduced(a.getWidth()*.28f),1.f+e);
+        }
+    }
 
     juce::String behaviorName(int type,bool crypt,float behavior) const
     {
