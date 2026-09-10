@@ -3,6 +3,7 @@
 #include "../Core/HorrorCastleProcessor.h"
 #include "../HorrorCastle/CastleParameters.h"
 #include "../HorrorCastle/SynthesisFamilyContract.h"
+#include "../HorrorCastle/PerformanceCreatureRoster.h"
 #include <memory>
 
 namespace horrorcastle {
@@ -17,9 +18,7 @@ public:
     {
         const bool crypt=scene=="crypt"; accent=crypt?juce::Colour(0xffc65b55):juce::Colour(0xffaa7ac8);
         if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type")))){
-            const std::array<int,11> cryptRoster{{0,1,2,6,7,9,12,15,16,17,14}};
-            const std::array<int,11> towerRoster{{1,3,4,7,8,10,11,13,15,16,17}};
-            const auto& roster=(scene=="crypt")?cryptRoster:towerRoster;
+            const auto& roster=(scene=="crypt")?performance_roster::crypt:performance_roster::tower;
             for(const int i:roster){
                 const auto& law=synthesis_contract::get(static_cast<GeneratorType>(i),scene=="crypt");
                 creature.addItem(choice->choices[i]+"  //  "+law.family,i+1);
