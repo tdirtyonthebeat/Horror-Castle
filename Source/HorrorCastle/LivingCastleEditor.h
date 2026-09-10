@@ -120,10 +120,10 @@ public:
         // preserving the reference composition while making the sound visible.
         // Performance is deliberately two-oscillator: one CRYPT creature and one
         // TOWER creature. The Laboratory retains the legacy three-slot machinery.
-        oscillators[0]->setBounds(bounds(132,112,360,292));
-        oscillators[1]->setBounds(bounds(824,112,360,292));
-        creaturePortrait.setBounds(bounds(24,805,400,245));
-        soulGlass.setBounds(bounds(438,805,390,245));
+        oscillators[0]->setBounds(bounds(92,108,430,380));
+        oscillators[1]->setBounds(bounds(926,108,430,380));
+        creaturePortrait.setBounds(bounds(54,760,430,270));
+        soulGlass.setBounds(bounds(506,760,436,270));
     }
 
 private:
