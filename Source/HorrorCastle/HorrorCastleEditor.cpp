@@ -509,6 +509,11 @@ void HorrorCastleEditor::setPerformanceMode(bool simplified)
         showChoice(p.route,!simplified);
     };
     simplifyScene(crypt); simplifyScene(tower);
+    // In Performance mode the legacy scene panels themselves disappear. Their
+    // opaque interiors were masking the castle artwork and visually fighting the
+    // new two-oscillator chambers. The Laboratory restores them unchanged.
+    crypt.setVisible(!simplified); tower.setVisible(!simplified);
+    centerSpine.setVisible(!simplified);
     for(auto* x:{&ritualMix,&ritualDepth,&ritualDrive,&ritualWidth,&ritualFeedback,&graveReverb,&graveDelay,&graveFeedback,&graveTone,&graveOutput,&hexAmount})showControl(*x,!simplified);
     showChoice(ritualMode,!simplified);
     ritualTitle.setVisible(!simplified);graveTitle.setVisible(!simplified);status.setVisible(!simplified);
