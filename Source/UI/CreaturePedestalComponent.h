@@ -32,8 +32,14 @@ public:
         creature.setColour(juce::ComboBox::textColourId,juce::Colour(0xffddd1bd));
         creature.setColour(juce::ComboBox::outlineColourId,accent.withAlpha(.55f));
         addAndMakeVisible(creature);
-        typeA=std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment>(state,param::id(scene.toRawUTF8(),index,"type"),creature);
-        creature.onChange=[this]{signalFocus();};
+        creature.onChange=[this]{
+            if(syncingType)return;
+            if(auto* p=state.getParameter(param::id(scene.toRawUTF8(),index,"type"))){
+                const int type=creature.getSelectedId()-1;
+                if(type>=0){p->beginChangeGesture();p->setValueNotifyingHost(p->convertTo0to1((float)type));p->endChangeGesture();}
+            }
+            signalFocus();
+        };
 
         morph.setSliderStyle(juce::Slider::RotaryHorizontalVerticalDrag);
         morph.setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
@@ -118,6 +124,7 @@ public:
     }
 
 private:
+    bool containsItemId(int id) const {for(int i=0;i<creature.getNumItems();++i)if(creature.getItemId(i)==id)return true;return false;}
     float read(const char* leaf) const {if(auto* p=state.getRawParameterValue(param::id(scene.toRawUTF8(),index,leaf)))return p->load();return 0.f;}
     void signalFocus(){if(onFocus)onFocus(scene=="crypt",juce::jlimit(0,17,(int)std::lround(read("type"))),index-1);}
 
@@ -211,6 +218,22 @@ private:
     void timerCallback() override
     {
         const bool crypt=scene=="crypt";
+        const int type=juce::jlimit(0,17,(int)std::lround(read("type")));
+        const int wantedId=type+1;
+        if(creature.getSelectedId()!=wantedId){
+            syncingType=true;
+            if(!containsItemId(wantedId)){
+                if(legacyItemId>0&&legacyItemId!=wantedId)creature.removeItem(legacyItemId);
+                juce::String name="Legacy Engine";
+                if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type"))))
+                    if(type<choice->choices.size())name=choice->choices[type];
+                legacyItemId=wantedId;
+                creature.addItem(name+"  //  LEGACY • OPEN LABORATORY",wantedId);
+            }
+            creature.setSelectedId(wantedId,juce::dontSendNotification);
+            syncingType=false;
+        }
+        power.setButtonText(read("enabled")>.5f?"ON":"OFF");
         const float target=processor.getCreatureEnergy(crypt,index-1);
         energy += .32f*(target-energy);
         phase=std::fmod(phase+.035f+.12f*energy,juce::MathConstants<float>::twoPi);
@@ -219,9 +242,8 @@ private:
 
     HorrorCastleProcessor& processor;
     juce::AudioProcessorValueTreeState& state;
-    juce::String scene; int index=1; float energy=0.f,phase=0.f; bool focused=false; juce::Colour accent;
+    juce::String scene; int index=1; float energy=0.f,phase=0.f; bool focused=false,syncingType=false; int legacyItemId=0; juce::Colour accent;
     juce::ComboBox creature; juce::Slider morph; juce::TextButton power;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> typeA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> morphA;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> enabledA;
 };
