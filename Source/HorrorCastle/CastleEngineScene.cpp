@@ -233,8 +233,24 @@ for(const auto& gen:g)if(gen.enabled&&gen.level>0.f){
 }
 roomPreserve=roomWeight>1.0e-5f?juce::jlimit(.10f,.30f,roomPreserve/roomWeight):.12f;
 
-float stereoSide=familyStereoSide;if(isCrypt){const float sub=std::sin(T*v.cryptSubPhase),abyssTone=std::sin(T*v.cryptAbyssPhase),underbody=sub*(.06f+.30f*character)+abyssTone*(.015f+.13f*character),cutoff=7200.f-5700.f*character,alpha=1.f-std::exp(-T*cutoff/(float)sr);v.cryptBody+=alpha*(x-v.cryptBody);const float body=.38f*x+.62f*v.cryptBody;x=std::tanh((body+underbody)*(1.f+.95f*character));}
-else{const float bellA=(f*2.41421356f<sr*.46f)?std::sin(T*v.towerBellPhaseA):0.f,bellB=(f*3.73205081f<sr*.46f)?std::sin(T*v.towerBellPhaseB+.37f):0.f,celestial=bellA*(.08f+.30f*character)+bellB*(.03f+.17f*character),alpha=1.f-std::exp(-T*2500.f/(float)sr);v.towerBody+=alpha*(x-v.towerBody);const float air=x-v.towerBody;x=std::tanh(x*(.78f-.20f*character)+air*(.14f+.48f*character)+celestial);stereoSide=(bellA-bellB)*(.015f+.11f*character);}
+float stereoSide=familyStereoSide;
+if(isCrypt){
+    // Room character must colour, never generate a pitched identity of its own.
+    // The previous global sub/quarter-tone underbody made unrelated creatures
+    // share an audible drone. Keep only a slow body response and saturation.
+    const float cutoff=7200.f-5700.f*character;
+    const float alpha=1.f-std::exp(-T*cutoff/(float)sr);
+    v.cryptBody+=alpha*(x-v.cryptBody);
+    const float body=.38f*x+.62f*v.cryptBody;
+    x=std::tanh(body*(1.f+.72f*character));
+}else{
+    // Likewise, TOWER no longer injects fixed bell partials into every engine.
+    // "Bell" now belongs only to Bell Glass (and other explicit modal creatures).
+    const float alpha=1.f-std::exp(-T*2500.f/(float)sr);
+    v.towerBody+=alpha*(x-v.towerBody);
+    const float air=x-v.towerBody;
+    x=std::tanh(x*(.86f-.14f*character)+air*(.10f+.34f*character));
+}
 x=x*(1.f-roomPreserve)+preRoomIdentity*roomPreserve;
 // Generator-local articulation already owns the amplitude contour. Keep only
 // velocity and room gain here so downstream processing cannot homogenize species.
