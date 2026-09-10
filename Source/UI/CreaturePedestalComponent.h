@@ -16,8 +16,15 @@ public:
       : processor(p), state(p.getParameterState()), scene(room), index(slot)
     {
         const bool crypt=scene=="crypt"; accent=crypt?juce::Colour(0xffc65b55):juce::Colour(0xffaa7ac8);
-        if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type"))))
-            for(int i=0;i<choice->choices.size();++i) creature.addItem(choice->choices[i],i+1);
+        if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type")))){
+            const std::array<int,11> cryptRoster{{0,1,2,6,7,9,12,15,16,17,14}};
+            const std::array<int,11> towerRoster{{1,3,4,7,8,10,11,13,15,16,17}};
+            const auto& roster=(scene=="crypt")?cryptRoster:towerRoster;
+            for(const int i:roster){
+                const auto& law=synthesis_contract::get(static_cast<GeneratorType>(i),scene=="crypt");
+                creature.addItem(choice->choices[i]+"  //  "+law.family,i+1);
+            }
+        }
         creature.setTextWhenNothingSelected("SUMMON CREATURE");
         creature.setColour(juce::ComboBox::backgroundColourId,juce::Colour(0xff07090c));
         creature.setColour(juce::ComboBox::textColourId,juce::Colour(0xffddd1bd));
@@ -63,17 +70,19 @@ public:
         if(focused){g.setColour(accent.withAlpha(.08f+.12f*energy));g.fillRoundedRectangle(r.reduced(3.f),6.f);}
 
         // Live altar halo: real per-creature audio energy, not parameter level.
-        auto altar=juce::Rectangle<float>(10.f,70.f,(float)getWidth()-20.f,104.f);
+        auto altar=juce::Rectangle<float>(18.f,108.f,(float)getWidth()-36.f,150.f);
         g.setColour(accent.withAlpha(.025f+.18f*energy));g.fillEllipse(altar.reduced(8.f-energy*6.f));
         drawBehavior(g,altar,type,crypt);
 
         g.setColour(accent);g.setFont(juce::Font(juce::FontOptions(10.f)).boldened());
         g.drawText(crypt?"OSCILLATOR A // CRYPT":"OSCILLATOR B // TOWER",10,7,getWidth()-86,15,juce::Justification::centredLeft);
-        g.setColour(juce::Colour(0xffb8ac9a));g.setFont(juce::FontOptions(8.f));
-        g.drawFittedText(law.family,10,24,getWidth()-20,12,juce::Justification::centredLeft,1);
+        g.setColour(juce::Colour(0xffb8ac9a));g.setFont(juce::FontOptions(8.5f));
+        g.drawFittedText(law.family,12,28,getWidth()-24,14,juce::Justification::centredLeft,1);
+        g.setColour(juce::Colour(0xff8e877d));g.setFont(juce::FontOptions(7.6f));
+        g.drawFittedText(juce::String("MORPH // ")+law.morphTrajectory,12,44,getWidth()-24,18,juce::Justification::centredLeft,2);
 
         g.setColour(juce::Colour(0xffd9ccb8));g.setFont(juce::Font(juce::FontOptions(9.f)).boldened());
-        g.drawText("TRANSFORM",8,getHeight()-34,getWidth()-16,13,juce::Justification::centred);
+        g.drawText("TRANSFORM",8,getHeight()-204,getWidth()-16,14,juce::Justification::centred);
 
         const auto lamp=juce::Rectangle<float>((float)getWidth()-22.f,9.f,9.f,9.f);
         g.setColour(accent.withAlpha(.08f+.92f*energy));g.fillEllipse(lamp.expanded(energy*2.5f));
@@ -82,20 +91,20 @@ public:
         g.drawText(powered?(energy>.025f?"AWAKE":"READY"):"OFF",getWidth()-76,7,50,12,juce::Justification::centredRight);
 
         const float behavior=juce::jlimit(0.f,1.f,behaviorMeter(type,crypt));
-        auto meter=juce::Rectangle<float>(12.f,181.f,(float)getWidth()-24.f,7.f);
+        auto meter=juce::Rectangle<float>(18.f,(float)getHeight()-62.f,(float)getWidth()-36.f,8.f);
         g.setColour(juce::Colour(0xff17191d));g.fillRoundedRectangle(meter,2.f);
         g.setColour(accent.withAlpha(.26f+.62f*energy));g.fillRoundedRectangle(meter.withWidth(meter.getWidth()*energy),2.f);
         g.setColour(juce::Colour(0xffa69b8c));g.setFont(juce::FontOptions(7.f));
         g.drawText("SOUL "+juce::String((int)std::lround(energy*100.f))+"%  //  "+behaviorName(type,crypt,behavior),
-                   9,190,getWidth()-18,12,juce::Justification::centred);
+                   12,getHeight()-50,getWidth()-24,13,juce::Justification::centred);
     }
 
     void resized() override
     {
-        power.setBounds(getWidth()-70,30,58,24);
-        creature.setBounds(12,64,getWidth()-24,30);
-        const int d=juce::jmin(118,getHeight()-132);
-        morph.setBounds((getWidth()-d)/2,getHeight()-126,d,d);
+        power.setBounds(getWidth()-74,18,62,26);
+        creature.setBounds(14,70,getWidth()-28,32);
+        const int d=juce::jmin(132,getHeight()-180);
+        morph.setBounds((getWidth()-d)/2,getHeight()-190,d,d);
     }
 
 private:
