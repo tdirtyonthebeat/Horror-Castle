@@ -18,11 +18,14 @@ public:
     {
         const bool crypt=scene=="crypt"; accent=crypt?juce::Colour(0xffc65b55):juce::Colour(0xffaa7ac8);
         if(auto* choice=dynamic_cast<juce::AudioParameterChoice*>(state.getParameter(param::id(scene.toRawUTF8(),index,"type")))){
-            const auto& roster=(scene=="crypt")?performance_roster::crypt:performance_roster::tower;
-            for(const int i:roster){
-                const auto& law=synthesis_contract::get(static_cast<GeneratorType>(i),scene=="crypt");
-                creature.addItem(choice->choices[i]+"  //  "+law.family,i+1);
-            }
+            auto addRoster=[&](const auto& roster){
+                for(const int i:roster){
+                    const auto& law=synthesis_contract::get(static_cast<GeneratorType>(i),scene=="crypt");
+                    creature.addItem(choice->choices[i]+"  //  "+law.family,i+1);
+                }
+            };
+            if(scene=="crypt")addRoster(performance_roster::crypt);
+            else addRoster(performance_roster::tower);
         }
         creature.setTextWhenNothingSelected("SUMMON CREATURE");
         creature.setColour(juce::ComboBox::backgroundColourId,juce::Colour(0xff07090c));
