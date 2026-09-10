@@ -11,8 +11,11 @@ auto&g=s.voice.generators; const float character=juce::jlimit(0.f,1.f,s.characte
 float& wander=isCrypt?v.cryptWander:v.towerWander; wander=std::fmod(wander+(isCrypt?(.045f+.025f*character):(.11f+.035f*character))/(float)sr,1.f);
 const float fixedCents=isCrypt?v.cryptDetune:v.towerDetune; const float movingCents=std::sin(juce::MathConstants<float>::twoPi*wander)*(isCrypt?(2.0f+8.5f*character):(.08f+.42f*character)); const float driftCents=(fixedCents*character)+movingCents;
 float f=hz(v.pitchNote + pitchBendSemitones + hx[9]*12.f)*std::pow(2.f,(driftCents + (globalUnison-1)*fixedCents*.08f)/1200.f);
-if(isCrypt){ v.cryptSubPhase=std::fmod(v.cryptSubPhase+(f*.5f)/(float)sr,1.f); v.cryptAbyssPhase=std::fmod(v.cryptAbyssPhase+(f*.25f)/(float)sr,1.f); }
-else{ const float bellA=f*2.41421356f,bellB=f*3.73205081f; if(bellA<sr*.46f)v.towerBellPhaseA=std::fmod(v.towerBellPhaseA+bellA/(float)sr,1.f); if(bellB<sr*.46f)v.towerBellPhaseB=std::fmod(v.towerBellPhaseB+bellB/(float)sr,1.f); }
+if(isCrypt){
+    // Legacy room phases are retained in voice state for preset compatibility,
+    // but Performance room coloration no longer advances or injects pitched
+    // sub/bell oscillators. Pitched resonances belong to explicit creatures only.
+}
 const float shapeMod=isCrypt?hx[3]:hx[4],fmDepthMod=hx[5]*.75f;
 auto modShape=[&](const GeneratorSlot& gen){float sh=gen.shape+shapeMod;if(gen.type==GeneratorType::FM||gen.type==GeneratorType::PM||(!isCrypt&&gen.type==GeneratorType::ChamberIII))sh+=fmDepthMod;return juce::jlimit(0.f,1.f,sh);};
 float shapeA=modShape(g[0]),shapeB=modShape(g[1]),shapeC=modShape(g[2]); float sceneCut=isCrypt?hx[1]:hx[2],sceneDrive=hx[6];
