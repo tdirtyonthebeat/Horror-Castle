@@ -43,17 +43,36 @@ float CastleEngine::rnd(){rng^=rng<<13;rng^=rng>>17;rng^=rng<<5;return float(rng
 float CastleEngine::osc(GeneratorType t,float p,float shape,float f){
 const float T=juce::MathConstants<float>::twoPi; const float dt=juce::jlimit(1.0e-6f,.49f,f/(float)sr);
 switch(t){
-case GeneratorType::VA:{float saw=2.f*p-1.f-polyBlep(p,dt);const float width=juce::jlimit(.12f,.88f,.66f-.32f*shape);float pulse=p<width?1.f:-1.f;pulse+=polyBlep(p,dt);float e=p-width;if(e<0.f)e+=1.f;pulse-=polyBlep(e,dt);return saw*(1.f-shape)+pulse*shape;}
+case GeneratorType::VA:{
+    // Production VA: band-limited saw/pulse with equal-power morphing and
+    // conservative headroom. The old linear blend got noticeably thinner at
+    // mid MORPH and exaggerated the shared distortion stage.
+    const float saw=2.f*p-1.f-polyBlep(p,dt);
+    const float width=juce::jlimit(.14f,.86f,.68f-.36f*shape);
+    float pulse=p<width?1.f:-1.f;
+    pulse+=polyBlep(p,dt);
+    float e=p-width;if(e<0.f)e+=1.f;
+    pulse-=polyBlep(e,dt);
+    const float a=std::cos(shape*juce::MathConstants<float>::halfPi);
+    const float b=std::sin(shape*juce::MathConstants<float>::halfPi);
+    return juce::jlimit(-1.f,1.f,(saw*a+pulse*b)*.78f);
+}
 case GeneratorType::Wavetable:{
-    // Spectral table morph: SHAPE travels from hollow fundamental to bright,
-    // odd/even-rich spectra instead of acting like a second generic sine blend.
-    const float a=std::sin(T*p);
-    const float b=(f*2.f<sr*.46f)?std::sin(T*2.f*p+.35f):0.f;
-    const float h3=(f*3.f<sr*.46f)?std::sin(T*3.f*p+1.1f):0.f;
-    const float h5=(f*5.f<sr*.46f)?std::sin(T*5.f*p+.72f):0.f;
-    const float dark=.88f*a+.12f*h3;
-    const float bright=.42f*a+.32f*b+.18f*h3+.12f*h5;
-    return std::tanh((dark*(1.f-shape)+bright*shape)*(1.0f+.35f*shape));
+    // Band-limited harmonic-frame wavetable. MORPH changes spectral frame while
+    // amplitude stays intentionally stable, closer to a polished table synth than
+    // a waveshaper. Harmonics simply disappear before Nyquist instead of folding.
+    const float h1=std::sin(T*p);
+    const float h2=(f*2.f<sr*.45f)?std::sin(T*2.f*p+.19f):0.f;
+    const float h3=(f*3.f<sr*.45f)?std::sin(T*3.f*p+.73f):0.f;
+    const float h4=(f*4.f<sr*.45f)?std::sin(T*4.f*p+1.17f):0.f;
+    const float h5=(f*5.f<sr*.45f)?std::sin(T*5.f*p+.41f):0.f;
+    const float h7=(f*7.f<sr*.45f)?std::sin(T*7.f*p+1.43f):0.f;
+    const float frameA=.92f*h1+.18f*h3;
+    const float frameB=.58f*h1+.28f*h2+.20f*h4+.10f*h5;
+    const float frameC=.44f*h1+.20f*h3+.16f*h5+.12f*h7;
+    const float q=shape*2.f;
+    const float y=q<1.f?frameA+(frameB-frameA)*q:frameB+(frameC-frameB)*(q-1.f);
+    return y*.78f;
 }
 case GeneratorType::FM:{
     // Metallic, index-driven family with an intentionally non-integer ratio.
@@ -63,10 +82,15 @@ case GeneratorType::FM:{
     return std::sin(T*p+index*mod);
 }
 case GeneratorType::PM:{
-    // Harder phase-warp family: fixed high-ratio carrier fold, very unlike FM.
-    const float warp=std::sin(T*p*(4.01f+2.0f*shape));
-    const float folded=std::sin(T*p+(.30f+4.7f*shape)*warp);
-    return std::tanh(folded*(1.15f+1.4f*shape));
+    // Clean phase modulation with a Nyquist-aware index. Keeping the modulator
+    // ratio discrete-ish and limiting sideband span prevents the fizzy alias
+    // cloud that previously made PM resemble several other bright engines.
+    const float ratio=2.f+std::floor(shape*3.999f); // 2:1 .. 5:1
+    const float rawIndex=.18f+3.35f*shape*shape;
+    const float room=juce::jlimit(.12f,1.f,(float)(sr*.44f/std::max(1.f,f)-1.f)/std::max(1.f,ratio*4.f));
+    const float index=rawIndex*room;
+    const float mod=std::sin(T*p*ratio);
+    return std::sin(T*p+index*mod)*.82f;
 }
 case GeneratorType::Vector:{
     // Four-corner vector path: sine -> triangle -> saw-ish -> hollow octave.
@@ -75,9 +99,10 @@ case GeneratorType::Vector:{
     const float saw=2.f*p-1.f-polyBlep(p,dt);
     const float octave=(f*2.f<sr*.46f)?std::sin(T*2.f*p+.65f):0.f;
     const float q=shape*3.f; const int region=juce::jlimit(0,2,(int)q); const float t=q-(float)region;
-    if(region==0)return sine*(1.f-t)+tri*t;
-    if(region==1)return tri*(1.f-t)+saw*t;
-    return saw*(1.f-t)+(sine*.35f+octave*.65f)*t;
+    const float a=std::cos(t*juce::MathConstants<float>::halfPi),b=std::sin(t*juce::MathConstants<float>::halfPi);
+    if(region==0)return (sine*a+tri*b)*.76f;
+    if(region==1)return (tri*a+saw*b)*.76f;
+    return (saw*a+(sine*.35f+octave*.65f)*b)*.76f;
 }
 case GeneratorType::Chip:{
     // Duty-cycle and bit-depth are coupled into one deliberately digital macro.
