@@ -56,9 +56,16 @@ float RitualFMEngine::renderSample(VoiceState& state,
 
     // Performance gestures increase modulation index rather than merely volume.
     // This makes mod wheel/pressure open timbre and complexity in a playable way.
-    const float index = 0.35f + topology * 2.2f + character * 3.8f + expression * 4.8f;
-    const float feedback = juce::jlimit(0.0f, 0.92f,
-                                        0.04f + character * 0.42f + expression * 0.24f);
+    const float requestedIndex = 0.30f + topology * 2.0f + character * 3.2f + expression * 4.2f;
+    // Sideband headroom: high notes automatically back the index down instead of
+    // spraying aliases above Nyquist. This keeps the FM family glassy and precise
+    // across the keyboard rather than only sounding clean in the middle register.
+    const float highestRatio = crypt ? 2.0110f : 3.73205081f;
+    const float sidebandRoom = juce::jlimit(0.10f, 1.0f,
+        (float)((sampleRate * 0.44 / std::max(1.0f, fundamentalHz) - highestRatio) / 8.0f));
+    const float index = requestedIndex * sidebandRoom;
+    const float feedback = juce::jlimit(0.0f, 0.78f,
+                                        0.03f + character * 0.34f + expression * 0.18f);
 
     const float op4 = std::sin(phi[3] + state.previous[3] * feedback * 2.6f);
     const float op3 = std::sin(phi[2] + op4 * index * 0.68f);
@@ -94,16 +101,17 @@ float RitualFMEngine::renderSample(VoiceState& state,
     float out = chain * chainW + branch * branchW + dual * dualW;
     if (crypt)
     {
-        // CRYPT compresses toward a physical, dense mid/low body.
-        out = std::tanh((out + 0.10f * std::sin(phi[1]))
-                        * (1.05f + character * 0.95f));
+        // Dense without blanket saturation: retain operator detail, then add only
+        // a little low-ratio body. Headroom is fixed so velocity/expression do
+        // not turn into accidental loudness jumps.
+        out = out * (0.76f + character * 0.10f) + 0.055f * std::sin(phi[1]);
     }
     else
     {
-        // TOWER preserves more upper transient detail and adds a restrained
-        // high-ratio glint instead of CRYPT's underbody.
-        const float glint = std::sin(phi[3] + op3 * 0.5f) * (0.04f + 0.10f * character);
-        out = std::tanh(out * (0.88f + character * 0.48f) + glint);
+        // TOWER stays airy and precise; the high-ratio operator is audible only
+        // as a controlled glint, not as a permanent bell pasted onto every note.
+        const float glint = std::sin(phi[3] + op3 * 0.35f) * (0.025f + 0.055f * character);
+        out = out * (0.72f + character * 0.12f) + glint;
     }
 
     return juce::jlimit(-1.0f, 1.0f, out);
