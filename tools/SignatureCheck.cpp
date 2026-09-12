@@ -287,6 +287,24 @@ int main(int argc,char* argv[])
     check(difference(additive,granular)>.08f,"Additive and granular families remain clearly distinct");
     check(difference(granular,resynthesis)>.08f,"Granular and spectral-resynthesis families remain clearly distinct");
 
+    // Production-clarity gate: core families should keep useful headroom and
+    // should not collapse into the same saturated crest profile after polishing.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<int> clarityTypes = isCrypt ? std::vector<int>{0,1,2,6} : std::vector<int>{3,4,8,11,17};
+        float minRms=10.f,maxRms=0.f,minCrest=100.f,maxCrest=0.f;
+        for(const int type:clarityTypes){
+            auto fp=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);});
+            const float rr=rms(fp),cr=crestProxy(fp);
+            minRms=std::min(minRms,rr);maxRms=std::max(maxRms,rr);
+            minCrest=std::min(minCrest,cr);maxCrest=std::max(maxCrest,cr);
+            check(finite(fp)&&rr>.001f&&rr<.72f,isCrypt?"CRYPT public engine keeps clean headroom":"TOWER public engine keeps clean headroom");
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" clarity rms="<<minRms<<".."<<maxRms
+                 <<" crest="<<minCrest<<".."<<maxCrest<<"\n";
+        check(maxCrest-minCrest>.04f,isCrypt?"CRYPT public engines retain dynamic identity":"TOWER public engines retain dynamic identity");
+    }
+
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
     auto corpseRotSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.rot",.92f);});
     auto corpseFormantSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.formant",.82f);});
