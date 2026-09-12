@@ -105,8 +105,11 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
         }
     }
     if(gen.type==GeneratorType::FM){auto& fmState=isCrypt?v.cryptRitualFM[(size_t)slot]:v.towerRitualFM[(size_t)slot];const float pressure=juce::jlimit(0.f,1.f,std::max(channelPressure,v.polyPressure));const float expression=juce::jlimit(0.f,1.f,v.velocity*.22f+modWheel*.43f+pressure*.35f);return ritualFM.renderSample(fmState,freq,sh,character,expression,isCrypt,sr);}
-    float y=osc(gen.type,phase,sh,freq); if(isCrypt){const float scar=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.7f)*(.04f+.18f*character):0.f,asym=y*std::abs(y)*(.10f+.32f*character);return std::tanh((y+scar-asym)*(1.f+1.15f*character));}
-    float glass=0.f;if(freq*2.f<sr*.46f)glass+=.12f*std::sin(T*phase*2.f+sh*.8f);if(freq*5.f<sr*.46f)glass+=.05f*std::sin(T*phase*5.f+sh*2.1f);return std::tanh(y*.82f+glass*(.22f+.38f*character));
+    // Common synthesis families must arrive at the Creature Contract clean.
+    // Earlier builds stamped CRYPT scar harmonics / TOWER glass partials onto
+    // every basic oscillator, which blurred family identity and reintroduced a
+    // common "Castle" pitch signature. Room character is handled downstream.
+    return osc(gen.type,phase,sh,freq);
 };
 // Engine-aware articulation is intentionally generator-local.  The Castle's
 // species must not all inherit the same temporal fingerprint just because they
@@ -127,11 +130,11 @@ auto creatureContract=[&](GeneratorType type,float y,float phase,float sh,float 
     const float hit=juce::jlimit(0.f,1.f,v.iron.value);
     const float slow=std::sin(T*wander);
     switch(type){
-        case GeneratorType::VA:        return std::tanh(y*(1.05f+1.25f*sh)-y*std::abs(y)*(.08f+.34f*sh));                 // WEREWOLF: growl/transform
-        case GeneratorType::Wavetable: return std::tanh(y*(.82f+.38f*sh)+(freq*3.f<sr*.46f?std::sin(T*phase*3.f)*.18f*sh:0.f)); // VAMPIRE: elegant harmonic bite
-        case GeneratorType::FM:        return std::tanh(y*(.78f+1.55f*hit)+slow*.07f*sh);                                // SORCERER: metallic spell strike
-        case GeneratorType::PM:        return std::sin(y*(1.35f+2.4f*sh))* (.78f+.18f*hit);                             // WITCH: warped phase magic
-        case GeneratorType::Vector:    return std::tanh(y*(.88f+.45f*sh)+slow*.12f*(1.f-sh));                           // SHAPESHIFTER: continuous mutation
+        case GeneratorType::VA:        return y*(.94f+.08f*sh)-y*std::abs(y)*(.025f+.10f*sh);                            // WEREWOLF: clean VA body, restrained growl
+        case GeneratorType::Wavetable: return y*(.96f+.05f*sh);                                                          // VAMPIRE: preserve table-frame detail
+        case GeneratorType::FM:        return y*(.88f+.24f*hit)+slow*.015f*sh;                                           // SORCERER: preserve operator sidebands
+        case GeneratorType::PM:        return y*(.91f+.10f*hit);                                                         // WITCH: phase detail without second waveshaper
+        case GeneratorType::Vector:    return y*(.94f+.05f*sh)+slow*.018f*(1.f-sh);                           // SHAPESHIFTER: continuous mutation
         case GeneratorType::Chip:      return juce::jlimit(-1.f,1.f,y*(.70f+.48f*hit));                                // GREMLIN: brittle digital snap
         case GeneratorType::Noise:     return std::tanh(y*(.72f+1.45f*sh))* (.62f+.32f*hit);                            // GHOUL: breath/grit
         case GeneratorType::Resonator: return std::tanh(y*(1.05f+.70f*hit))*(.82f+.12f*slow);                           // SKELETON: struck/rattling
