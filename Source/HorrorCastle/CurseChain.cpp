@@ -138,12 +138,14 @@ namespace HorrorCastle
 
             switch (lane.source)
             {
-                case ModSource::None:     source = 0.0f; break;
-                case ModSource::Blood:    source = blood * 2.0f - 1.0f; break;
-                case ModSource::Wraith:   source = wraith * 2.0f - 1.0f; break;
-                case ModSource::Velocity: source = velocity * 2.0f - 1.0f; break;
-                case ModSource::Key:      source = key01 * 2.0f - 1.0f; break;
-                case ModSource::Random:   source = random01 * 2.0f - 1.0f; break;
+                case ModSource::None:       source = 0.0f; break;
+                case ModSource::Blood:      source = blood * 2.0f - 1.0f; break;
+                case ModSource::Wraith:     source = wraith * 2.0f - 1.0f; break;
+                case ModSource::Velocity:   source = velocity * 2.0f - 1.0f; break;
+                case ModSource::Key:        source = key01 * 2.0f - 1.0f; break;
+                case ModSource::Random:     source = random01 * 2.0f - 1.0f; break;
+                case ModSource::ModWheel:   source = 0.0f; break; // live value is supplied by CastleEngine's HEX path
+                case ModSource::Aftertouch: source = 0.0f; break; // legacy preview chain has no live MIDI-expression input
                 case ModSource::Pulse:
                 {
                     lane.pulsePhase += dt * 1.7f;

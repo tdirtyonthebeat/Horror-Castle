@@ -36,7 +36,7 @@ public:
         for (int i = 0; i < Lanes; ++i)
         {
             const auto p = juce::String("hex.curse") + juce::String(i + 1) + ".";
-            lane(i).source = choice(apvts, p + "source", 6);
+            lane(i).source = choice(apvts, p + "source", 8);
             lane(i).curse = choice(apvts, p + "curse", 6);
             lane(i).destination = choice(apvts, p + "destination", 21);
             lane(i).amount = value(apvts, p + "amount", 0.f);
@@ -58,7 +58,8 @@ public:
     }
 
     std::array<float, Destinations> evaluate(float blood, float wraith, float velocity,
-                                              float key, float random, float dt)
+                                              float key, float random, float modWheel,
+                                              float aftertouch, float dt)
     {
         pulse += dt * 1.7f;
         while (pulse > 1.f) pulse -= 1.f;
@@ -79,7 +80,7 @@ public:
             hauntPhase[(size_t)i] += dt * juce::jlimit(.05f, 8.f, l.hauntRate);
             while (hauntPhase[(size_t)i] > 1.f) hauntPhase[(size_t)i] -= 1.f;
 
-            float s = sourceValue(l.source, blood, wraith, velocity, key, random, pulse);
+            float s = sourceValue(l.source, blood, wraith, velocity, key, random, modWheel, aftertouch, pulse);
             s = applyCurse(l, s, blood, wraith, hauntPhase[(size_t)i]);
 
             // Low, bounded memory makes the lane feel alive but cannot self-oscillate.
@@ -145,7 +146,8 @@ private:
     }
 
     static float sourceValue(int source, float blood, float wraith, float velocity,
-                             float key, float random, float pulse)
+                             float key, float random, float modWheel, float aftertouch,
+                             float pulse)
     {
         switch (source)
         {
@@ -155,6 +157,8 @@ private:
             case 4: return key;
             case 5: return random;
             case 6: return std::sin(juce::MathConstants<float>::twoPi * pulse);
+            case 7: return juce::jlimit(-1.f, 1.f, modWheel * 2.f - 1.f);
+            case 8: return juce::jlimit(-1.f, 1.f, aftertouch * 2.f - 1.f);
             default:return 0.f;
         }
     }

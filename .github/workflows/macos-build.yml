@@ -1,28 +1,59 @@
 name: macOS Build
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-
 jobs:
   static-and-build:
     runs-on: macos-latest
     timeout-minutes: 45
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Static validation
         run: python3 tools/static_validate.py
-
+      - name: Nervous System validation
+        run: python3 tools/nervous_system_validate.py
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="$(uname -m)"
-
       - name: Build VST3, AU, and Standalone
         run: cmake --build build --config Release --target HorrorCastle_VST3 HorrorCastle_AU HorrorCastle_Standalone -j 3
-
       - name: Build signature checker
         run: cmake --build build --config Release --target HorrorCastleSignatureCheck -j 3
+      - name: Build Living Engines check
+        run: cmake --build build --config Release --target HorrorCastleLivingEnginesCheck -j 3
+      - name: Run Living Engines check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleLivingEnginesCheck' -o -name 'Horror Castle Living Engines Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build COFFIN check
+        run: cmake --build build --config Release --target HorrorCastleCoffinCheck -j 3
+      - name: Run COFFIN check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleCoffinCheck' -o -name 'Horror Castle Coffin Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build CHOIR check
+        run: cmake --build build --config Release --target HorrorCastleChoirCheck -j 3
+      - name: Run CHOIR check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleChoirCheck' -o -name 'Horror Castle Choir Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build Bestiary check
+        run: cmake --build build --config Release --target HorrorCastleBestiaryCheck -j 3
+      - name: Run Bestiary check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleBestiaryCheck' -o -name 'Horror Castle Bestiary Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build MIRROR / ABYSS check
+        run: cmake --build build --config Release --target HorrorCastleMirrorAbyssCheck -j 3
+      - name: Run MIRROR / ABYSS check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleMirrorAbyssCheck' -o -name 'Horror Castle Mirror Abyss Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build electromagnetic check
+        run: cmake --build build --config Release --target HorrorCastleElectromagneticCheck -j 3
+      - name: Run electromagnetic check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleElectromagneticCheck' -o -name 'Horror Castle Electromagnetic Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build chaotic fluid check
+        run: cmake --build build --config Release --target HorrorCastleFluidCheck -j 3
+      - name: Run chaotic fluid check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleFluidCheck' -o -name 'Horror Castle Fluid Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build Creature State Bus check
+        run: cmake --build build --config Release --target HorrorCastleCreatureStateBusCheck -j 3
+      - name: Run Creature State Bus check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleCreatureStateBusCheck' -o -name 'Horror Castle Creature State Bus Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"
+      - name: Build factory preset check
+        run: cmake --build build --config Release --target HorrorCastleFactoryPresetCheck -j 3
+      - name: Run factory preset check
+        run: CHECKER="$(find build -type f -perm -111 \( -name 'HorrorCastleFactoryPresetCheck' -o -name 'Horror Castle Factory Preset Check' \) -print -quit)"; test -n "$CHECKER"; "$CHECKER"

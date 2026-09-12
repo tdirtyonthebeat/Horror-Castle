@@ -14,6 +14,7 @@ public:
     ~GrimoireComponent() override;
     void paint(juce::Graphics&) override;
     void resized() override;
+    void showCreatureGuide(bool crypt,int type);
     std::function<void()> onClose;
     std::function<void(const juce::String&)> onStatus;
 
@@ -26,7 +27,7 @@ private:
     juce::ComboBox category;
     juce::TextEditor search;
     juce::TextButton closeButton{"CLOSE"}, previousButton{"◀"}, nextButton{"▶"};
-    juce::TextButton summonButton{"SUMMON SPELL"}, favouriteButton{"☆ FAVORITE"};
+    juce::TextButton summonButton{"RE-SUMMON"}, favouriteButton{"☆ FAVORITE"};
     juce::TextButton saveButton{"SAVE USER SPELL"}, loadButton{"OPEN USER SPELL"};
     juce::Label title, subtitle, description, tags, pageLabel;
     std::unique_ptr<juce::FileChooser> chooser;

@@ -29,6 +29,7 @@ void CastleEngine::reset(){
     delay.reset(); grave.reset(); possession.reset(); rituals.reset(); hex.reset(); ritual.reset();
     for(auto& a : hexLaneTelemetry) a.store(0.f, std::memory_order_relaxed);
     for(auto& a : hexDestinationTelemetry) a.store(0.f, std::memory_order_relaxed);
+    modWheel=0.f; channelPressure=0.f; pitchBendSemitones=0.f;
 }
 CastleEngine::Voice* CastleEngine::steal(){for(auto&v:voices)if(!v.active)return &v;return &*std::min_element(voices.begin(),voices.end(),[](auto&a,auto&b){return a.amp.value<b.amp.value;});}
 void CastleEngine::on(int n,int vel){auto*v=steal();*v=Voice{};v->active=true;v->note=n;v->pitchNote=globalGlide>.001f?lastPlayedNote:(float)n;lastPlayedNote=(float)n;v->velocity=vel/127.f;
@@ -117,7 +118,7 @@ wander=std::fmod(wander+(isCrypt?(.045f+.025f*character):(.11f+.035f*character))
 const float fixedCents=isCrypt?v.cryptDetune:v.towerDetune;
 const float movingCents=std::sin(juce::MathConstants<float>::twoPi*wander)*(isCrypt?(2.0f+8.5f*character):(.08f+.42f*character));
 const float driftCents=(fixedCents*character)+movingCents;
-float f=hz(v.pitchNote + hx[9]*12.f)*std::pow(2.f,(driftCents + (globalUnison-1)*fixedCents*.08f)/1200.f);
+float f=hz(v.pitchNote + pitchBendSemitones + hx[9]*12.f)*std::pow(2.f,(driftCents + (globalUnison-1)*fixedCents*.08f)/1200.f);
 // Independent chamber identity clocks. These are not simple harmonics of the
 // user-generator phase state, so their character remains audible across VA,
 // wavetable, FM, Vector, Chip and Resonator source choices.
@@ -224,6 +225,13 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
         }
     }
 
+    if(gen.type==GeneratorType::FM){
+        auto& fmState=isCrypt?v.cryptRitualFM[(size_t)slot]:v.towerRitualFM[(size_t)slot];
+        const float pressure=juce::jlimit(0.f,1.f,std::max(channelPressure,v.polyPressure));
+        const float expression=juce::jlimit(0.f,1.f,v.velocity*.22f+modWheel*.43f+pressure*.35f);
+        return ritualFM.renderSample(fmState,freq,sh,character,expression,isCrypt,sr);
+    }
+
     float y=osc(gen.type,phase,sh,freq);
     if(isCrypt){
         const float scar=(freq*3.f<sr*.46f)?std::sin(T*phase*3.f+sh*1.7f)*(.04f+.18f*character):0.f;
@@ -312,6 +320,19 @@ void CastleEngine::render(juce::AudioBuffer<float>& b, juce::MidiBuffer& m)
             const auto msg = meta.getMessage();
             if (msg.isNoteOn()) on(msg.getNoteNumber(), msg.getVelocity());
             else if (msg.isNoteOff()) off(msg.getNoteNumber());
+            else if (msg.isPitchWheel())
+                pitchBendSemitones = ((float) msg.getPitchWheelValue() - 8192.0f) / 8192.0f * 2.0f;
+            else if (msg.isController() && msg.getControllerNumber() == 1)
+                modWheel = juce::jlimit(0.0f, 1.0f, msg.getControllerValue() / 127.0f);
+            else if (msg.isChannelPressure())
+                channelPressure = juce::jlimit(0.0f, 1.0f, msg.getChannelPressureValue() / 127.0f);
+            else if (msg.isAftertouch())
+            {
+                const int note = msg.getNoteNumber();
+                const float pressure = juce::jlimit(0.0f, 1.0f, msg.getAfterTouchValue() / 127.0f);
+                for (auto& voice : voices)
+                    if (voice.active && voice.note == note) voice.polyPressure = pressure;
+            }
             else if (msg.isAllNotesOff() || msg.isAllSoundOff()) reset();
             ++midiIt;
         }
@@ -333,7 +354,8 @@ void CastleEngine::render(juce::AudioBuffer<float>& b, juce::MidiBuffer& m)
             const float blood = v.amp.value;
             const float wraith = v.iron.value;
 
-            auto hx = hex.evaluate(blood, wraith, v.velocity, key, random, 1.f / (float)sr);
+            const float pressure = juce::jlimit(0.f, 1.f, std::max(channelPressure, v.polyPressure));
+            auto hx = hex.evaluate(blood, wraith, v.velocity, key, random, modWheel, pressure, 1.f / (float)sr);
             const float hexScale = juce::jlimit(0.f, 1.f, patch.hexAmount);
             for (int d = 0; d < CurseMatrix::Destinations; ++d)
             {

@@ -4,7 +4,7 @@
 
 namespace horrorcastle {
 
-enum class GeneratorType : uint8_t { VA, Wavetable, FM, PM, Vector, Chip, Noise, Resonator, ChamberI, ChamberII, ChamberIII, ChamberIV };
+enum class GeneratorType : uint8_t { VA, Wavetable, FM, PM, Vector, Chip, Noise, Resonator, ChamberI, ChamberII, ChamberIII, ChamberIV, ChamberV, ChamberVI, ChamberVII, ChamberVIII, ChamberIX, ChamberX };
 enum class FilterType : uint8_t { LowPass, HighPass, BandPass, Notch, Comb, Formant, Diode, K35, Shaper };
 enum class Route : uint8_t { Serial, Parallel, Split, Crossfeed };
 
@@ -43,8 +43,6 @@ struct ModRoute {
     bool bipolar = false;
 };
 
-// Horror Castle's voice architecture: two independent scene chambers feed
-// their own generator/filter networks before meeting in the Ritual engine.
 struct VoiceArchitecture {
     std::array<GeneratorSlot, 3> generators{};
     GeneratorSlot noise;
@@ -61,7 +59,7 @@ struct SceneArchitecture {
     bool crossSceneFM = false;
     bool crossSceneRing = false;
     float sceneBalance = 0.0f;
-    float character = 0.5f; // CRYPT = Dread, TOWER = Aether
+    float character = 0.5f;
 };
 
 struct CastlePatchArchitecture {
