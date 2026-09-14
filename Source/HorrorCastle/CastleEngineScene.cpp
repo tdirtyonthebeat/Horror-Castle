@@ -105,6 +105,29 @@ auto signatureOsc=[&](int slot,const GeneratorSlot& gen,float phase,float sh,flo
         }
     }
     if(gen.type==GeneratorType::FM){auto& fmState=isCrypt?v.cryptRitualFM[(size_t)slot]:v.towerRitualFM[(size_t)slot];const float pressure=juce::jlimit(0.f,1.f,std::max(channelPressure,v.polyPressure));const float expression=juce::jlimit(0.f,1.f,v.velocity*.22f+modWheel*.43f+pressure*.35f);return ritualFM.renderSample(fmState,freq,sh,character,expression,isCrypt,sr);}
+    if(gen.type==GeneratorType::PM){
+        // True phase-continuous PM.  The previous integer-ratio selector jumped
+        // abruptly at four MORPH thresholds and derived the modulator directly
+        // from carrier phase, so automation could click and high notes could
+        // fold.  A dedicated modulator now glides between ratios while its
+        // modulation index falls smoothly as Nyquist headroom disappears.
+        float& pmPhase=isCrypt?v.cryptPmPhase[(size_t)slot]:v.towerPmPhase[(size_t)slot];
+        float& pmRatio=isCrypt?v.cryptPmRatio[(size_t)slot]:v.towerPmRatio[(size_t)slot];
+        float& pmIndex=isCrypt?v.cryptPmIndex[(size_t)slot]:v.towerPmIndex[(size_t)slot];
+        const float targetRatio=1.5f+3.5f*sh;
+        const float targetIndex=.18f+3.35f*sh*sh;
+        if(pmRatio<=0.f)pmRatio=targetRatio;
+        if(pmIndex<=0.f)pmIndex=targetIndex;
+        const float ratioAlpha=1.f-std::exp(-1.f/(.012f*(float)sr));
+        const float indexAlpha=1.f-std::exp(-1.f/(.006f*(float)sr));
+        pmRatio+=ratioAlpha*(targetRatio-pmRatio);
+        pmIndex+=indexAlpha*(targetIndex-pmIndex);
+        const float maxRatio=std::max(.25f,(float)(sr*.44/std::max(1.f,freq)));
+        const float safeRatio=std::min(pmRatio,maxRatio);
+        pmPhase=std::fmod(pmPhase+freq*safeRatio/(float)sr,1.f);
+        const float sidebandRoom=juce::jlimit(0.f,1.f,(maxRatio-1.f)/std::max(1.f,safeRatio*4.f));
+        return std::sin(T*phase+pmIndex*sidebandRoom*std::sin(T*pmPhase))*.82f;
+    }
     // Common synthesis families must arrive at the Creature Contract clean.
     // Earlier builds stamped CRYPT scar harmonics / TOWER glass partials onto
     // every basic oscillator, which blurred family identity and reintroduced a
@@ -195,14 +218,13 @@ auto renderSlot=[&](int slot,const GeneratorSlot& gen,float phase,float sh,float
     dc+=.002f*(y-dc);
     y-=dc;
 
-    // Stereo is also a declared family law. Keep it subtle here: the later
-    // room-pan stage remains in charge of placement, while this creates motion
-    // characteristic of the synthesis family itself.
-    const float stereoPhase=T*(wander*(.37f+.63f*contract.stereoMotion)+phase*.17f);
-    familyStereoSide+=y*std::sin(stereoPhase+slot*.91f)*contract.stereoMotion*.11f*gen.level;
-
     const float art=articulationFor(gen.type,familyMorph);
     const float rendered=y*art*gen.level;
+    // Stereo is also a declared family law. Derive it from the articulated
+    // creature signal; the final scene gain is applied below so a muted chamber
+    // cannot leak a raw side signal around its master control.
+    const float stereoPhase=T*(wander*(.37f+.63f*contract.stereoMotion)+phase*.17f);
+    familyStereoSide+=rendered*std::sin(stereoPhase+slot*.91f)*contract.stereoMotion*.16f;
     auto& peak=isCrypt?v.cryptCreatureBlockPeak[(size_t)slot]:v.towerCreatureBlockPeak[(size_t)slot];
     peak=std::max(peak,std::abs(rendered));
     return rendered;
@@ -239,7 +261,6 @@ for(const auto& gen:g)if(gen.enabled&&gen.level>0.f){
 }
 roomPreserve=roomWeight>1.0e-5f?juce::jlimit(.10f,.30f,roomPreserve/roomWeight):.12f;
 
-float stereoSide=familyStereoSide;
 if(isCrypt){
     // Room character must colour, never generate a pitched identity of its own.
     // The previous global sub/quarter-tone underbody made unrelated creatures
@@ -260,7 +281,9 @@ if(isCrypt){
 x=x*(1.f-roomPreserve)+preRoomIdentity*roomPreserve;
 // Generator-local articulation already owns the amplitude contour. Keep only
 // velocity and room gain here so downstream processing cannot homogenize species.
-x*=v.velocity*s.voice.master;
+const float sceneGain=v.velocity*s.voice.master;
+x*=sceneGain;
+float stereoSide=familyStereoSide*.42f*sceneGain;
 float levelSum=0.f,weightedPan=0.f,spread=0.f;for(const auto& gen:g){if(gen.enabled){levelSum+=gen.level;weightedPan+=gen.pan*gen.level;spread+=gen.spread*gen.level;}}if(levelSum>1.0e-5f){weightedPan/=levelSum;spread/=levelSum;}float pan=juce::jlimit(-1.f,1.f,weightedPan+s.sceneBalance);const float unisonWidth=(globalUnison-1)/7.f;stereoSide+=x*spread*(.06f+.18f*unisonWidth)*std::sin(T*wander+.7f);const float left=x*(.5f-.5f*pan)+stereoSide*(.5f+.25f*character),right=x*(.5f+.5f*pan)-stereoSide*(.5f+.25f*character);l+=left;r+=right;}
 
 } // namespace horrorcastle

@@ -99,7 +99,28 @@ float tailRms(const Render& r,size_t count=4800){if(r.left.empty())return 0.f;co
 void setPossession(HarnessProcessor& h,const char* id,float amount){setParam(h,juce::String("possession.")+id,amount);}
 void hexDestination(HarnessProcessor& h,int destination,float amount=.72f){setParam(h,"hex.curse1.source",6.f);setParam(h,"hex.curse1.curse",0.f);setParam(h,"hex.curse1.destination",(float)destination);setParam(h,"hex.curse1.amount",amount);}
 
-void sceneOnly(HarnessProcessor& h,bool crypt){setParam(h,"crypt.master",crypt?.86f:0.f);setParam(h,"tower.master",crypt?0.f:.86f);setParam(h,crypt?"crypt.character":"tower.character",.82f);}
+void sceneOnly(HarnessProcessor& h,bool crypt)
+{
+    setParam(h,"crypt.master",crypt?.86f:0.f);setParam(h,"tower.master",crypt?0.f:.86f);
+    setParam(h,crypt?"crypt.character":"tower.character",.82f);
+    for(const auto scene:{juce::String("crypt"),juce::String("tower")})
+        for(int i=1;i<=3;++i){
+            const bool awake=(scene=="crypt")==crypt&&i==1;
+            setParam(h,scene+".g"+juce::String(i)+".enabled",awake?1.f:0.f);
+            setParam(h,scene+".g"+juce::String(i)+".level",awake?.78f:0.f);
+        }
+}
+void pairedScenes(HarnessProcessor& h)
+{
+    setParam(h,"crypt.master",.72f);setParam(h,"tower.master",.72f);
+    for(const auto scene:{juce::String("crypt"),juce::String("tower")})
+        for(int i=1;i<=3;++i){
+            setParam(h,scene+".g"+juce::String(i)+".enabled",i==1?1.f:0.f);
+            setParam(h,scene+".g"+juce::String(i)+".level",i==1?.76f:0.f);
+        }
+    setParam(h,"crypt.g1.type",0.f);setParam(h,"crypt.g1.shape",.31f);
+    setParam(h,"tower.g1.type",1.f);setParam(h,"tower.g1.shape",.67f);
+}
 void ritual(HarnessProcessor& h,int mode){setParam(h,"ritual.mode",(float)mode);setParam(h,"ritual.mix",.82f);setParam(h,"ritual.depth",.58f);setParam(h,"ritual.drive",.46f);setParam(h,"ritual.feedback",.42f);}
 void curse(HarnessProcessor& h,int curseKind){setParam(h,"hex.curse1.source",6.f);setParam(h,"hex.curse1.curse",(float)curseKind);setParam(h,"hex.curse1.destination",9.f);setParam(h,"hex.curse1.amount",.22f);}
 
@@ -117,10 +138,47 @@ void exclusiveEngine(HarnessProcessor& h,bool crypt,int typeIndex)
     setParam(h,scene+".g1.shape",.58f);
 }
 
+constexpr int MorphSweepBlock = 64;
+Render renderMorphSweep(bool crypt,int typeIndex)
+{
+    constexpr double sampleRate=48000.0;
+    constexpr int total=48000;
+    HarnessProcessor h;neutral(h);exclusiveEngine(h,crypt,typeIndex);
+    CastleEngine engine;engine.prepare(sampleRate,MorphSweepBlock);
+    Render out;out.left.reserve(total);out.right.reserve(total);
+    juce::AudioBuffer<float> audio(2,MorphSweepBlock);
+    const juce::String shapeId=crypt?"crypt.g1.shape":"tower.g1.shape";
+    for(int pos=0;pos<total;pos+=MorphSweepBlock){
+        setParam(h,shapeId,juce::jlimit(0.f,1.f,(float)pos/(float)(total-MorphSweepBlock)));
+        engine.setParameters(h.state);
+        juce::MidiBuffer midi;if(pos==0)midi.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)104),0);
+        engine.render(audio,midi);
+        const int n=juce::jmin(MorphSweepBlock,total-pos);
+        for(int i=0;i<n;++i){out.left.push_back(audio.getSample(0,i));out.right.push_back(audio.getSample(1,i));}
+    }
+    return out;
+}
+
+float blockBoundarySpikeProxy(const Render& r,int block)
+{
+    if(r.left.size()<(size_t)(block*10))return 1000.f;
+    const size_t begin=(size_t)block*4,end=r.left.size()-(size_t)block*4;
+    double ordinaryEnergy=0;size_t ordinaryCount=0;float boundaryPeak=0.f;
+    for(size_t i=begin+1;i<end;++i){
+        const float d=std::abs(r.left[i]-r.left[i-1]);
+        if(i%(size_t)block==0)boundaryPeak=std::max(boundaryPeak,d);
+        else{ordinaryEnergy+=(double)d*d;++ordinaryCount;}
+    }
+    const float ordinaryRms=ordinaryCount?(float)std::sqrt(ordinaryEnergy/(double)ordinaryCount):0.f;
+    return boundaryPeak/std::max(1.0e-6f,ordinaryRms);
+}
+
 bool writeWav(const juce::File& file,const Render& r)
 {
     file.deleteFile(); juce::WavAudioFormat format;
-    std::unique_ptr<juce::AudioFormatWriter> writer(format.createWriterFor(new juce::FileOutputStream(file),48000.0,2,16,{},0));
+    std::unique_ptr<juce::OutputStream> stream=std::make_unique<juce::FileOutputStream>(file);
+    const auto options=juce::AudioFormatWriterOptions{}.withSampleRate(48000.0).withNumChannels(2).withBitsPerSample(16);
+    auto writer=format.createWriterFor(stream,options);
     if(!writer)return false; juce::AudioBuffer<float> b(2,(int)r.left.size());
     b.copyFrom(0,0,r.left.data(),(int)r.left.size());b.copyFrom(1,0,r.right.data(),(int)r.right.size());
     return writer->writeFromAudioSampleBuffer(b,0,b.getNumSamples());
@@ -287,6 +345,13 @@ int main(int argc,char* argv[])
     check(difference(additive,granular)>.08f,"Additive and granular families remain clearly distinct");
     check(difference(granular,resynthesis)>.08f,"Granular and spectral-resynthesis families remain clearly distinct");
 
+    auto cryptPmSweep=renderMorphSweep(true,3),towerPmSweep=renderMorphSweep(false,3);
+    const float cryptPmSpike=blockBoundarySpikeProxy(cryptPmSweep,MorphSweepBlock);
+    const float towerPmSpike=blockBoundarySpikeProxy(towerPmSweep,MorphSweepBlock);
+    std::cout<<"INFO  PM MORPH boundary spike(C/T)="<<cryptPmSpike<<"/"<<towerPmSpike<<"\n";
+    check(finite(cryptPmSweep)&&finite(towerPmSweep)&&std::max(cryptPmSpike,towerPmSpike)<8.f,
+          "PM MORPH automation remains phase-continuous");
+
     // Production-clarity gate: core families should keep useful headroom and
     // should not collapse into the same saturated crest profile after polishing.
     for(bool isCrypt : {true,false})
@@ -304,6 +369,9 @@ int main(int argc,char* argv[])
                  <<" crest="<<minCrest<<".."<<maxCrest<<"\n";
         check(maxCrest-minCrest>.04f,isCrypt?"CRYPT public engines retain dynamic identity":"TOWER public engines retain dynamic identity");
     }
+
+    auto mastersMuted=render(.65,[](auto& h){pairedScenes(h);setParam(h,"crypt.master",0.f);setParam(h,"tower.master",0.f);});
+    check(rms(mastersMuted)<1.0e-6f,"scene masters silence creature stereo motion");
 
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
     auto corpseRotSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.rot",.92f);});
@@ -336,17 +404,20 @@ int main(int argc,char* argv[])
     check(difference(clean,madness)>.015f,"CLEAN Curse differs from MADNESS");
     check(difference(clean,blood)>.015f,"CLEAN Curse differs from BLOOD");
 
-    auto noPossession=render(1.25,[](auto&){});
-    auto bloodFeed=render(1.25,[](auto& h){setPossession(h,"bloodFeed",.82f);});
-    auto aetherLeak=render(1.25,[](auto& h){setPossession(h,"aetherLeak",.82f);});
-    auto soulExchange=render(1.25,[](auto& h){setPossession(h,"soulExchange",.82f);});
-    auto haunted=render(1.25,[](auto& h){setPossession(h,"haunt",.82f);});
+    auto noPossession=render(1.25,[](auto& h){pairedScenes(h);});
+    auto bloodFeed=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"bloodFeed",.82f);});
+    auto aetherLeak=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"aetherLeak",.82f);});
+    auto soulExchange=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"soulExchange",.82f);});
+    auto haunted=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"haunt",.82f);});
+    const float bloodDifference=difference(noPossession,bloodFeed),aetherDifference=difference(noPossession,aetherLeak);
+    const float soulDifference=difference(noPossession,soulExchange),hauntDifference=difference(noPossession,haunted);
+    std::cout<<"INFO  possession difference blood/aether/soul/haunt="<<bloodDifference<<"/"<<aetherDifference<<"/"<<soulDifference<<"/"<<hauntDifference<<"\n";
     check(finite(bloodFeed)&&finite(aetherLeak)&&finite(soulExchange)&&finite(haunted),"Possession Matrix remains finite");
-    check(difference(noPossession,bloodFeed)>.04f&&difference(noPossession,aetherLeak)>.04f&&difference(noPossession,soulExchange)>.04f&&difference(noPossession,haunted)>.02f,"Possession modes audibly affect the castle");
+    check(bloodDifference>.04f&&aetherDifference>.04f&&soulDifference>.04f&&hauntDifference>.02f,"Possession modes audibly affect an awake chamber pair");
 
     auto hexDread=render(1.1,[](auto& h){sceneOnly(h,true);hexDestination(h,11);});
     auto hexAether=render(1.1,[](auto& h){sceneOnly(h,false);hexDestination(h,12);});
-    auto hexSoul=render(1.1,[](auto& h){hexDestination(h,19);});
+    auto hexSoul=render(1.1,[](auto& h){pairedScenes(h);hexDestination(h,19);});
     check(difference(crypt,hexDread)>.015f,"HEX 2.0 reaches CRYPT DREAD");
     check(difference(tower,hexAether)>.015f,"HEX 2.0 reaches TOWER AETHER");
     check(difference(noPossession,hexSoul)>.015f,"HEX 2.0 reaches SOUL EXCHANGE");

@@ -2,6 +2,11 @@
 
 ## 1.3.0 — Living Engines
 
+- Rebuilt PM around a per-voice, phase-continuous modulator with smoothed ratios and Nyquist-aware index reduction so TRANSFORM automation no longer jumps between integer-ratio steps.
+- Fixed creature-family stereo motion bypassing the CRYPT/TOWER scene masters; a muted chamber now reaches true silence.
+- Rebalanced BLOOD FEED so an awake CRYPT/TOWER pair receives a clearly audible, bounded envelope transfer.
+- Updated signature fixtures for the intentional single-oscillator INIT state and made CI execute, rather than only compile, the full signature regression suite.
+- Removed two accidental manifest overflow entries so the documented append-only factory bank is exactly 100 spells (indices 0–99).
 - Replaced the shared FM generator's simple nested-sine path with an independent phase-continuous four-operator Ritual FM engine.
 - Shape now morphs continuously through serial-chain, branching, and dual-carrier operator graphs rather than selecting fixed algorithms.
 - Gave CRYPT and TOWER different FM ratio families and chamber-aware nonlinear finishing while preserving the existing FM generator index.

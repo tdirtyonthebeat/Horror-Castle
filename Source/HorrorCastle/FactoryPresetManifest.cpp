@@ -33,7 +33,7 @@ std::vector<FactoryPresetDefinition> FactoryPresetManifest::create()
       {"Rib Strike","PERCUSSION","PERCUSSION • BONE • IMPACT",5},{"Coffin Slam","PERCUSSION","PERCUSSION • COFFIN • HEAVY",5},{"Arc Snap","PERCUSSION","PERCUSSION • POLTERGEIST • ELECTRIC",5},{"Vortex Kick","PERCUSSION","PERCUSSION • VORTEX • LOW",5},
       {"Raven Engine","RITUALS","SEQUENCE • RAVEN • RHYTHMIC",6},{"Blood Procession","RITUALS","SEQUENCE • BLOOD • DARK",6},{"Possession Clock","RITUALS","SEQUENCE • POSSESSION • MOTION",6},{"Orrery Rite","RITUALS","SEQUENCE • ORRERY • CELESTIAL",6},
       {"Door Behind You","CINEMATIC FX","FX • HAUNT • RISER",7},{"Arc in the Walls","CINEMATIC FX","FX • ELECTRIC • TENSION",7},{"Flooded Chapel","CINEMATIC FX","FX • FLUID • SPACE",7},{"The Ceiling Breathes","CINEMATIC FX","FX • BREATH • HORROR",7},
-      {"Living Storm","LIVING ECOLOGY","ECOLOGY • VORTEX • SIREN",8},{"Electric Séance","LIVING ECOLOGY","ECOLOGY • POLTERGEIST • AURORA",8},{"Haunted Climate","LIVING ECOLOGY","ECOLOGY • DUAL • EXPRESSIVE",8},{"Nervous Cathedral","LIVING ECOLOGY","ECOLOGY • SHOWCASE • CINEMATIC",8}
+      {"Living Storm","LIVING ECOLOGY","ECOLOGY • VORTEX • SIREN",8},{"Electric Séance","LIVING ECOLOGY","ECOLOGY • POLTERGEIST • AURORA",8}
     };
     int sigil=44; std::uint32_t seed=0xC4571E01u;
     for(const auto& p:fresh){seed=seed*1664525u+1013904223u;add(p.name,"Launch collection","A curated v1.3 launch spell with deterministic variation and performance-ready gain staging.",p.category,p.tags,sigil++,p.archetype,seed);}

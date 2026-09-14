@@ -82,12 +82,11 @@ case GeneratorType::FM:{
     return std::sin(T*p+index*mod);
 }
 case GeneratorType::PM:{
-    // Clean phase modulation with a Nyquist-aware index. Keeping the modulator
-    // ratio discrete-ish and limiting sideband span prevents the fizzy alias
-    // cloud that previously made PM resemble several other bright engines.
-    const float ratio=2.f+std::floor(shape*3.999f); // 2:1 .. 5:1
+    // Stateless fallback for callers outside the live scene renderer. The live
+    // PM path owns a phase-continuous, ratio-smoothed modulator per voice/slot.
+    const float ratio=3.f;
     const float rawIndex=.18f+3.35f*shape*shape;
-    const float room=juce::jlimit(.12f,1.f,(float)(sr*.44f/std::max(1.f,f)-1.f)/std::max(1.f,ratio*4.f));
+    const float room=juce::jlimit(0.f,1.f,(float)(sr*.44f/std::max(1.f,f)-1.f)/std::max(1.f,ratio*4.f));
     const float index=rawIndex*room;
     const float mod=std::sin(T*p*ratio);
     return std::sin(T*p+index*mod)*.82f;

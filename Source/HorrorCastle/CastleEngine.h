@@ -60,6 +60,12 @@ private:
   float cryptSubPhase=0, cryptAbyssPhase=0;
   float towerBellPhaseA=0, towerBellPhaseB=0;
   std::array<float,3> cryptAux1{}, cryptAux2{};
+  // PM owns a phase-continuous modulator per slot.  Keeping this state separate
+  // from the carrier prevents MORPH ratio changes from resetting or folding the
+  // modulator phase at each carrier wrap.
+  std::array<float,3> cryptPmPhase{}, towerPmPhase{};
+  std::array<float,3> cryptPmRatio{}, towerPmRatio{};
+  std::array<float,3> cryptPmIndex{}, towerPmIndex{};
   // Per-slot one-sample memories let each synthesis family own a tiny
   // clarity/edge stage without sharing a homogenising global processor.
   std::array<float,3> cryptCreatureMemory{}, towerCreatureMemory{};
