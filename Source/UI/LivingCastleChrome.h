@@ -1,225 +1,127 @@
 #pragma once
 #include <JuceHeader.h>
-#include "../HorrorCastle/CastleParameters.h"
-#include "../HorrorCastle/SynthesisFamilyContract.h"
 
 namespace horrorcastle {
 
-// Read-only visual identity layer for the v1.3 Living Engines editor.
-// It mirrors APVTS state only: no DSP ownership, no duplicate parameter state.
+// Performance chrome is deliberately architectural, not a second control layer.
+// It frames two independent summoning chambers and leaves the Castle artwork,
+// creature manifestations and Soul Glass as the visual hierarchy.
 class LivingCastleChrome final : public juce::Component, private juce::Timer
 {
 public:
-    explicit LivingCastleChrome(juce::AudioProcessorValueTreeState& state)
-        : apvts(state)
+    explicit LivingCastleChrome(juce::AudioProcessorValueTreeState& state) : apvts(state)
     {
-        setInterceptsMouseClicks(false, false);
-        startTimerHz(15);
-        refresh();
+        setInterceptsMouseClicks(false,false);
+        startTimerHz(24);
     }
 
     void paint(juce::Graphics& g) override
     {
         using namespace juce;
-        const auto r = getLocalBounds().toFloat();
-        const float cx = r.getCentreX();
+        const auto r=getLocalBounds().toFloat();
+        const float w=r.getWidth(),h=r.getHeight(),cx=r.getCentreX();
 
-        ColourGradient bg(Colour(0xff040506), 0.0f, 0.0f,
-                          Colour(0xff0b0b10), r.getRight(), r.getBottom(), false);
-        g.setGradientFill(bg);
-        g.fillRect(r);
+        ColourGradient bg(Colour(0xff030406),0,0,Colour(0xff0b0810),w,h,false);
+        bg.addColour(.42,Colour(0xff08090d));
+        g.setGradientFill(bg);g.fillRect(r);
 
-        drawStoneBand(g, Rectangle<float>(0, 0, r.getWidth(), 92), Colour(0xff8d6a42), .23f);
-        drawStoneBand(g, Rectangle<float>(10, 94, r.getWidth() * .495f - 12, 348), Colour(0xffb62d2b), .20f);
-        drawStoneBand(g, Rectangle<float>(r.getWidth() * .505f, 94, r.getWidth() * .495f - 10, 348), Colour(0xff8f4bb5), .20f);
-        drawStoneBand(g, Rectangle<float>(10, 446, r.getWidth() - 20, 126), Colour(0xff94734f), .16f);
-        drawStoneBand(g, Rectangle<float>(10, 576, r.getWidth() - 20, 196), Colour(0xff6f3e7c), .13f);
-        drawStoneBand(g, Rectangle<float>(10, 776, r.getWidth() - 20, r.getHeight() - 786), Colour(0xff8f4bb5), .13f);
+        // Architectural vignette keeps attention on the creature chambers.
+        ColourGradient vignette(Colours::transparentBlack,cx,h*.42f,Colour(0xff000000).withAlpha(.72f),cx,h*.96f,true);
+        g.setGradientFill(vignette);g.fillRect(r);
 
-        // Central gothic spine.
-        g.setColour(Colour(0xff020304).withAlpha(.94f));
-        g.fillRect(cx - 7.0f, 92.0f, 14.0f, 350.0f);
-        g.setColour(Colour(0xff826344).withAlpha(.58f));
-        g.drawLine(cx, 100.0f, cx, 436.0f, 1.0f);
-        for (int y = 116; y < 430; y += 24)
-        {
-            g.setColour(Colour(0xff6b1d1d).withAlpha(.25f));
-            g.fillEllipse(cx - 2.5f, (float)y, 5.0f, 5.0f);
+        drawSanctum(g,{42.f,88.f,w*.36f,430.f},Colour(0xffc65750),true);
+        drawSanctum(g,{w*.64f-42.f,88.f,w*.36f,430.f},Colour(0xffaa79c9),false);
+
+        // Central ritual axis: one quiet focal spine rather than a panel wall.
+        Path spine;
+        spine.startNewSubPath(cx,104.f);
+        spine.lineTo(cx-10.f,132.f);spine.lineTo(cx,160.f);spine.lineTo(cx+10.f,132.f);spine.closeSubPath();
+        for(int y=172;y<514;y+=38){spine.startNewSubPath(cx-5.f,(float)y);spine.lineTo(cx,(float)y+10.f);spine.lineTo(cx+5.f,(float)y);}
+        g.setColour(Colour(0xffb58b58).withAlpha(.26f));g.strokePath(spine,PathStrokeType(1.1f));
+        g.setColour(Colour(0xff6d536f).withAlpha(.12f));g.fillEllipse(cx-54.f,244.f,108.f,108.f);
+        g.setColour(Colour(0xffb58b58).withAlpha(.20f));g.drawEllipse(cx-42.f,256.f,84.f,84.f,.9f);
+        g.drawEllipse(cx-27.f,271.f,54.f,54.f,.7f);
+
+        // Witness gallery below: portrait -> Soul Glass -> Grimoire. These are
+        // visual destinations, not controls, so the chrome only gives them depth.
+        auto lower=Rectangle<float>(34.f,724.f,w-68.f,h-744.f);
+        g.setColour(Colour(0xff030405).withAlpha(.62f));g.fillRoundedRectangle(lower,16.f);
+        g.setColour(Colour(0xff8b6c49).withAlpha(.24f));g.drawRoundedRectangle(lower,16.f,1.f);
+        g.setColour(Colour(0xffd6c8af).withAlpha(.50f));g.setFont(Font(FontOptions(9.5f)).boldened());
+        g.drawText("WITNESS CHAMBER",lower.withHeight(24.f).reduced(14,0).toNearestInt(),Justification::centredLeft);
+
+        // Subtle reactive torch halos. These use actual oscillator enable/level
+        // state so the room visually wakes with the instrument.
+        const float cryptLife=life("crypt"),towerLife=life("tower");
+        drawTorch(g,{66.f,126.f,28.f,66.f},Colour(0xffc65750),cryptLife);
+        drawTorch(g,{w-94.f,126.f,28.f,66.f},Colour(0xffaa79c9),towerLife);
+
+        // Slow mist sits behind controls and reacts modestly to activity.
+        for(int i=0;i<4;++i){
+            const float travel=w+360.f;
+            const float x=std::fmod(phase*(7.f+i*2.3f)+i*337.f,travel)-180.f;
+            const float y=176.f+i*178.f;
+            const float lifeMix=.5f*(cryptLife+towerLife);
+            g.setColour(Colour(0xffb7c2ca).withAlpha(.008f+.012f*lifeMix));
+            g.fillEllipse(x,y,360.f,56.f+18.f*lifeMix);
         }
-
-        drawTitle(g, "CRYPT", Rectangle<float>(26, 100, r.getWidth() * .46f, 27), Colour(0xffcf5751));
-        drawTitle(g, "TOWER", Rectangle<float>(cx + 24, 100, r.getWidth() * .43f, 27), Colour(0xffb885d6));
-
-        // The central UX idea: every slot visibly announces what species powers it,
-        // what kind of synthesis it uses, and what MORPH means for that species.
-        drawEngineRow(g, "crypt", 26.0f, 132.0f, cx - 44.0f, cryptSlots, Colour(0xffd85b55));
-        drawEngineRow(g, "tower", cx + 24.0f, 132.0f, r.getRight() - 26.0f, towerSlots, Colour(0xffb985dd));
-
-        drawTitle(g, "RITUAL BUS", Rectangle<float>(26, 454, 220, 24), Colour(0xffc76a5e));
-        drawTitle(g, "GRAVE MASTER", Rectangle<float>(r.getWidth() * .53f, 454, 220, 24), Colour(0xffb887d0));
-        drawTitle(g, "HEX // THE CURSE ENGINE", Rectangle<float>(26, 584, 360, 24), Colour(0xffc66b71));
-        drawTitle(g, "GRIMOIRE", Rectangle<float>(26, 784, 260, 24), Colour(0xffb885d6));
-
-        const auto cryptReadout = Rectangle<float>(26, 405, cx - 44, 25);
-        const auto towerReadout = Rectangle<float>(cx + 24, 405, r.getRight() - cx - 50, 25);
-        drawReadout(g, cryptReadout, "CRYPT // " + activeSummary(cryptSlots), Colour(0xffd86059));
-        drawReadout(g, towerReadout, "TOWER // " + activeSummary(towerSlots), Colour(0xffb986dd));
-
-        // Gargoyle guide niche. This is intentionally read-only until the full
-        // interactive helper layer is wired; the copy is contextual and useful now.
-        auto guide = Rectangle<float>(r.getWidth() - 300.0f, r.getHeight() - 154.0f, 278.0f, 132.0f);
-        drawStoneBand(g, guide, Colour(0xff8b6a47), .18f);
-        auto garg = guide.removeFromLeft(88).reduced(8);
-        drawGargoyle(g, garg);
-        g.setColour(Colour(0xffd5c8b2));
-        g.setFont(FontOptions(13.0f));
-        g.drawText("GARGOYLE GUIDE", guide.removeFromTop(25).toNearestInt(), Justification::centredLeft);
-        g.setColour(Colour(0xffa99f91));
-        g.setFont(FontOptions(10.5f));
-        g.drawFittedText("Summon a creature, then MORPH it.\nEach card shows its synthesis family\nand the one transformation that matters.",
-                         guide.reduced(2).toNearestInt(), Justification::topLeft, 4);
     }
 
 private:
-    struct SlotInfo
-    {
-        juce::String name;
-        juce::String family;
-        juce::String shapeMeaning;
-        float level = 0.0f;
-        bool enabled = true;
-    };
-
     juce::AudioProcessorValueTreeState& apvts;
-    std::array<SlotInfo, 3> cryptSlots;
-    std::array<SlotInfo, 3> towerSlots;
+    float phase=0.f;
 
-    static juce::String familyFor(bool crypt, int index)
+    float read(const juce::String& id,float fallback=0.f) const
     {
-        index=juce::jlimit(0,17,index);
-        return synthesis_contract::get(static_cast<GeneratorType>(index),crypt).family;
+        if(auto* p=apvts.getRawParameterValue(id))return p->load();
+        return fallback;
     }
 
-    static juce::String shapeFor(bool crypt, int index)
+    float life(const char* scene) const
     {
-        index=juce::jlimit(0,17,index);
-        const auto& contract=synthesis_contract::get(static_cast<GeneratorType>(index),crypt);
-        return contract.morphTrajectory;
+        const float on=read(horrorcastle::param::id(scene,1,"enabled"),0.f)>.5f?1.f:0.f;
+        return juce::jlimit(0.f,1.f,on*read(horrorcastle::param::id(scene,1,"level"),0.f));
     }
 
-    void refresh()
+    static void drawSanctum(juce::Graphics& g,juce::Rectangle<float> r,juce::Colour accent,bool crypt)
     {
-        refreshScene("crypt", true, cryptSlots);
-        refreshScene("tower", false, towerSlots);
+        using namespace juce;
+        g.setColour(Colour(0xff050608).withAlpha(.68f));g.fillRoundedRectangle(r,18.f);
+        g.setColour(accent.withAlpha(.22f));g.drawRoundedRectangle(r,18.f,1.2f);
+
+        // Gothic arch.
+        auto inner=r.reduced(18.f);
+        Path arch;
+        arch.startNewSubPath(inner.getX(),inner.getBottom());
+        arch.lineTo(inner.getX(),inner.getY()+84.f);
+        arch.quadraticTo(inner.getCentreX(),inner.getY()-26.f,inner.getRight(),inner.getY()+84.f);
+        arch.lineTo(inner.getRight(),inner.getBottom());
+        g.setColour(Colour(0xff121216).withAlpha(.84f));g.fillPath(arch);
+        g.setColour(accent.withAlpha(.18f));g.strokePath(arch,PathStrokeType(1.f));
+
+        g.setColour(accent.withAlpha(.52f));g.setFont(Font(FontOptions(10.f)).boldened());
+        g.drawText(crypt?"CRYPT SANCTUM // OSCILLATOR A":"TOWER SANCTUM // OSCILLATOR B",
+                   r.withHeight(26.f).reduced(18,0).toNearestInt(),Justification::centredLeft);
+
+        // Stone scoring, intentionally sparse.
+        g.setColour(Colour(0xff2a272b).withAlpha(.34f));
+        for(float y=r.getY()+46.f;y<r.getBottom()-14.f;y+=34.f)g.drawLine(r.getX()+10.f,y,r.getRight()-10.f,y,.35f);
+    }
+
+    static void drawTorch(juce::Graphics& g,juce::Rectangle<float> r,juce::Colour accent,float life)
+    {
+        using namespace juce;
+        g.setColour(Colour(0xff161316));g.fillRoundedRectangle(r.withTrimmedTop(22.f),3.f);
+        const auto c=Point<float>(r.getCentreX(),r.getY()+18.f);
+        g.setColour(accent.withAlpha(.05f+.16f*life));g.fillEllipse(c.x-24.f-life*8.f,c.y-24.f-life*8.f,48.f+life*16.f,48.f+life*16.f);
+        g.setColour(accent.withAlpha(.35f+.55f*life));
+        Path flame;flame.startNewSubPath(c.x,c.y-13.f-life*7.f);flame.quadraticTo(c.x-11.f,c.y+4.f,c.x,c.y+12.f);flame.quadraticTo(c.x+11.f,c.y+4.f,c.x,c.y-13.f-life*7.f);g.fillPath(flame);
+    }
+
+    void timerCallback() override
+    {
+        phase=std::fmod(phase+.55f,100000.f);
         repaint();
-    }
-
-    void refreshScene(const char* scene, bool isCrypt, std::array<SlotInfo, 3>& slots)
-    {
-        for (int slot = 1; slot <= 3; ++slot)
-        {
-            auto& out = slots[(size_t)(slot - 1)];
-            const auto typeId = param::id(scene, slot, "type");
-            int index = 0;
-            if (auto* p = dynamic_cast<juce::AudioParameterChoice*>(apvts.getParameter(typeId)))
-            {
-                index = juce::jlimit(0, p->choices.size() - 1, p->getIndex());
-                out.name = p->choices[index];
-            }
-            out.family = familyFor(isCrypt, index);
-            out.shapeMeaning = shapeFor(isCrypt, index);
-            if (auto* raw = apvts.getRawParameterValue(param::id(scene, slot, "level"))) out.level = juce::jlimit(0.0f, 1.0f, raw->load());
-            if (auto* raw = apvts.getRawParameterValue(param::id(scene, slot, "enabled"))) out.enabled = raw->load() >= 0.5f;
-        }
-    }
-
-    void timerCallback() override { refresh(); }
-
-    static void drawEngineRow(juce::Graphics& g, const char*, float x0, float y, float right,
-                              const std::array<SlotInfo, 3>& slots, juce::Colour accent)
-    {
-        const float gap = 8.0f;
-        const float total = right - x0;
-        const float w = (total - gap * 2.0f) / 3.0f;
-        for (int i = 0; i < 3; ++i)
-        {
-            auto card = juce::Rectangle<float>(x0 + i * (w + gap), y, w, 76.0f);
-            g.setColour(juce::Colour(0xff050608).withAlpha(.91f));
-            g.fillRoundedRectangle(card, 4.0f);
-            g.setColour(accent.withAlpha(slots[(size_t)i].level > .01f ? .62f : .24f));
-            g.drawRoundedRectangle(card.reduced(.5f), 4.0f, slots[(size_t)i].level > .01f ? 1.4f : .8f);
-
-            auto head = card.reduced(8.0f, 6.0f);
-            g.setColour(accent.withAlpha(slots[(size_t)i].enabled ? .96f : .38f));
-            g.setFont(juce::Font(juce::FontOptions(12.0f)).boldened());
-            g.drawFittedText("GEN " + juce::String(i + 1) + " // " + slots[(size_t)i].name,
-                             head.removeFromTop(18).toNearestInt(), juce::Justification::centredLeft, 1);
-            g.setColour(juce::Colour(0xffc7bcad).withAlpha(.78f));
-            g.setFont(juce::FontOptions(9.5f));
-            g.drawFittedText(slots[(size_t)i].family,
-                             head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
-            g.setColour(accent.withAlpha(.72f));
-            g.setFont(juce::FontOptions(8.7f));
-            g.drawFittedText("MORPH: " + slots[(size_t)i].shapeMeaning + "   •   LEVEL " + juce::String(slots[(size_t)i].level, 2),
-                             head.removeFromTop(17).toNearestInt(), juce::Justification::centredLeft, 1);
-        }
-    }
-
-    static juce::String activeSummary(const std::array<SlotInfo, 3>& slots)
-    {
-        juce::StringArray names;
-        for (const auto& s : slots)
-            if (s.enabled && s.level > .01f) names.add(s.name);
-        return names.isEmpty() ? "NO ACTIVE ENGINES" : names.joinIntoString(" + ");
-    }
-
-    static void drawStoneBand(juce::Graphics& g, juce::Rectangle<float> r, juce::Colour accent, float alpha)
-    {
-        g.setColour(juce::Colour(0xff08090c).withAlpha(.97f));
-        g.fillRoundedRectangle(r, 4.0f);
-        g.setColour(juce::Colour(0xff29272a));
-        g.drawRoundedRectangle(r.reduced(.5f), 4.0f, 1.2f);
-        g.setColour(accent.withAlpha(alpha));
-        g.drawRoundedRectangle(r.reduced(2.0f), 3.0f, 1.0f);
-        g.setColour(juce::Colour(0xff000000).withAlpha(.44f));
-        for (float y = r.getY() + 10; y < r.getBottom(); y += 17)
-            g.drawLine(r.getX() + 5, y, r.getRight() - 5, y, .35f);
-    }
-
-    static void drawTitle(juce::Graphics& g, const juce::String& text, juce::Rectangle<float> r, juce::Colour accent)
-    {
-        g.setColour(accent.withAlpha(.96f));
-        g.setFont(juce::Font(juce::FontOptions(17.0f)).boldened());
-        g.drawText(text, r.toNearestInt(), juce::Justification::centredLeft);
-        g.setColour(accent.withAlpha(.35f));
-        g.drawLine(r.getX(), r.getBottom() - 1, r.getRight(), r.getBottom() - 1, .8f);
-    }
-
-    static void drawReadout(juce::Graphics& g, juce::Rectangle<float> r, const juce::String& text, juce::Colour accent)
-    {
-        g.setColour(juce::Colour(0xff030406).withAlpha(.90f));
-        g.fillRoundedRectangle(r, 3.0f);
-        g.setColour(accent.withAlpha(.32f));
-        g.drawRoundedRectangle(r, 3.0f, .8f);
-        g.setColour(accent.withAlpha(.90f));
-        g.setFont(juce::FontOptions(10.0f));
-        g.drawFittedText(text, r.reduced(8, 2).toNearestInt(), juce::Justification::centredLeft, 1);
-    }
-
-    static void drawGargoyle(juce::Graphics& g, juce::Rectangle<float> r)
-    {
-        const auto c = r.getCentre();
-        g.setColour(juce::Colour(0xff17191c));
-        g.fillEllipse(r.reduced(13));
-        juce::Path wing;
-        wing.startNewSubPath(c.x - 13, c.y - 5); wing.lineTo(r.getX() + 3, r.getY() + 10); wing.lineTo(c.x - 20, c.y + 14); wing.closeSubPath();
-        wing.startNewSubPath(c.x + 13, c.y - 5); wing.lineTo(r.getRight() - 3, r.getY() + 10); wing.lineTo(c.x + 20, c.y + 14); wing.closeSubPath();
-        g.setColour(juce::Colour(0xff292b2f)); g.fillPath(wing);
-        g.setColour(juce::Colour(0xff5b5d61)); g.strokePath(wing, juce::PathStrokeType(1.0f));
-        g.setColour(juce::Colour(0xffb72222));
-        g.fillEllipse(c.x - 8, c.y - 4, 4, 3); g.fillEllipse(c.x + 4, c.y - 4, 4, 3);
-        g.setColour(juce::Colour(0xff826344).withAlpha(.55f));
-        g.drawEllipse(r.reduced(5), 1.0f);
     }
 };
 
