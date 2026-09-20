@@ -118,7 +118,7 @@ public:
         // Live state reads like an instrument, not telemetry debug text.
         const float behavior=juce::jlimit(0.f,1.f,behaviorMeter(type,crypt));
         g.setColour(juce::Colour(0xff8d857a));g.setFont(juce::FontOptions(8.f));
-        g.drawText(powered?(e>.025f?"MANIFESTING  //  "+behaviorName(type,crypt,behavior):"SUMMONED  //  WAITING"):"DORMANT",
+        g.drawText(powered?(e>.025f?juce::String("MANIFESTING  //  ")+behaviorName(type,crypt,behavior):juce::String("SUMMONED  //  WAITING")):juce::String("DORMANT"),
                    20,331,getWidth()-40,15,juce::Justification::centred);
         auto meter=juce::Rectangle<float>(30.f,350.f,(float)getWidth()-60.f,5.f);
         g.setColour(juce::Colour(0xff17181b));g.fillRoundedRectangle(meter,2.f);
@@ -126,7 +126,7 @@ public:
 
         g.setColour(juce::Colour(0xffb8ad9d));g.setFont(juce::FontOptions(8.2f));
         g.drawText("CHOOSE CREATURE",20,366,getWidth()-40,14,juce::Justification::centredLeft);
-        g.drawText("TRANSFORM",20,getHeight()-122,getWidth()-40,14,juce::Justification::centred);
+        g.drawText("TRANSFORM",20,getHeight()-116,getWidth()-40,14,juce::Justification::centred);
 
         // Power lamp.
         const auto lamp=juce::Rectangle<float>((float)getWidth()-28.f,16.f,10.f,10.f);
@@ -137,8 +137,8 @@ public:
     {
         power.setBounds(getWidth()-92,10,68,28);
         creature.setBounds(20,383,getWidth()-40,34);
-        const int d=juce::jmin(156,getHeight()-350);
-        morph.setBounds((getWidth()-d)/2,getHeight()-108,d,d);
+        const int d=96;
+        morph.setBounds((getWidth()-d)/2,getHeight()-100,d,d);
     }
 
 private:
