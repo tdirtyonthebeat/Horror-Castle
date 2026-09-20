@@ -72,50 +72,73 @@ public:
         const bool crypt=scene=="crypt";
         const int type=currentType();
         const auto& law=synthesis_contract::get(static_cast<GeneratorType>(type),crypt);
-
-        juce::ColourGradient chamber(juce::Colour(0xff06080c),r.getCentreX(),r.getY(),juce::Colour(0xff111016),r.getCentreX(),r.getBottom(),false);
-        chamber.addColour(.58,accent.withAlpha(.08f+.10f*energy));
-        g.setGradientFill(chamber); g.fillRoundedRectangle(r,12.f);
-        g.setColour(juce::Colours::black.withAlpha(.48f)); g.fillRoundedRectangle(r.reduced(8.f).withTrimmedTop(88.f),10.f);
-        g.setColour(accent.withAlpha((focused?.72f:.34f)+.24f*energy)); g.drawRoundedRectangle(r.reduced(.8f),12.f,focused?2.2f:1.2f);
-
-        g.setColour(accent); g.setFont(juce::Font(juce::FontOptions(10.f)).boldened());
-        g.drawText(crypt?"OSCILLATOR A // CRYPT":"OSCILLATOR B // TOWER",10,7,getWidth()-86,15,juce::Justification::centredLeft);
-        g.setColour(juce::Colour(0xfff0e2cd)); g.setFont(juce::Font(juce::FontOptions(14.f)).boldened());
-        g.drawFittedText(law.creature,12,28,getWidth()-94,20,juce::Justification::centredLeft,1);
-        g.setColour(juce::Colour(0xffb8ac9a)); g.setFont(juce::FontOptions(9.f));
-        g.drawFittedText(law.family,12,49,getWidth()-24,14,juce::Justification::centredLeft,1);
-        g.setColour(juce::Colour(0xff9f9689)); g.setFont(juce::FontOptions(8.f));
-        g.drawFittedText(juce::String("TRANSFORMATION // ")+law.morphTrajectory,12,66,getWidth()-24,18,juce::Justification::centredLeft,2);
-
-        auto altar=juce::Rectangle<float>(24.f,112.f,(float)getWidth()-48.f,158.f);
-        g.setColour(accent.withAlpha(.025f+.18f*energy)); g.fillEllipse(altar.reduced(8.f-energy*8.f));
-        drawManifestation(g,altar,type,crypt,juce::jlimit(0.f,1.f,(float)morph.getValue()));
-        drawBehavior(g,altar,type,crypt);
-
-        g.setColour(juce::Colour(0xffd9ccb8)); g.setFont(juce::Font(juce::FontOptions(9.f)).boldened());
-        g.drawText("TRANSFORM",8,getHeight()-204,getWidth()-16,14,juce::Justification::centred);
-
-        const auto lamp=juce::Rectangle<float>((float)getWidth()-22.f,9.f,9.f,9.f);
-        g.setColour(accent.withAlpha(.08f+.92f*energy)); g.fillEllipse(lamp.expanded(energy*2.5f));
-        g.setColour(juce::Colour(0xff9c9385)); g.setFont(juce::FontOptions(7.f));
         const bool powered=read("enabled")>.5f;
-        g.drawText(powered?(energy>.025f?"AWAKE":"READY"):"OFF",getWidth()-76,7,50,12,juce::Justification::centredRight);
+        const float e=juce::jlimit(0.f,1.f,energy);
+        const float m=juce::jlimit(0.f,1.f,(float)morph.getValue());
 
+        // One large cinematic chamber per oscillator: title -> creature -> living
+        // manifestation -> selector -> one transformation control.
+        juce::ColourGradient chamber(juce::Colour(0xff050609),r.getCentreX(),r.getY(),
+                                     juce::Colour(0xff0d0a10),r.getCentreX(),r.getBottom(),false);
+        chamber.addColour(.46,accent.withAlpha(.045f+.085f*e));
+        g.setGradientFill(chamber);g.fillRoundedRectangle(r,16.f);
+        g.setColour(juce::Colours::black.withAlpha(.62f));g.fillRoundedRectangle(r.reduced(8.f),13.f);
+        g.setColour(accent.withAlpha((focused?.70f:.28f)+.24f*e));g.drawRoundedRectangle(r.reduced(.7f),16.f,focused?2.2f:1.0f);
+        g.setColour(juce::Colour(0xff8c7355).withAlpha(.24f));g.drawRoundedRectangle(r.reduced(5.f),12.f,.8f);
+
+        // Header hierarchy.
+        g.setColour(accent.withAlpha(powered?.96f:.42f));g.setFont(juce::Font(juce::FontOptions(10.f)).boldened());
+        g.drawText(crypt?"OSCILLATOR A  •  CRYPT":"OSCILLATOR B  •  TOWER",18,12,getWidth()-112,18,juce::Justification::centredLeft);
+        g.setColour(juce::Colour(0xfff2e7d5).withAlpha(powered?1.f:.48f));g.setFont(juce::Font(juce::FontOptions(24.f)).boldened());
+        g.drawFittedText(law.creature,18,36,getWidth()-36,34,juce::Justification::centredLeft,1);
+        g.setColour(juce::Colour(0xffc1b7a8).withAlpha(powered?.90f:.42f));g.setFont(juce::FontOptions(10.f));
+        g.drawFittedText(law.family+"  //  "+law.synthesisMethod,18,72,getWidth()-36,18,juce::Justification::centredLeft,1);
+
+        // Transformation law as a quiet engraved caption.
+        auto lawBox=juce::Rectangle<float>(18.f,94.f,(float)getWidth()-36.f,31.f);
+        g.setColour(juce::Colour(0xff111216));g.fillRoundedRectangle(lawBox,5.f);
+        g.setColour(accent.withAlpha(.22f));g.drawRoundedRectangle(lawBox,5.f,.8f);
+        g.setColour(juce::Colour(0xffaaa092));g.setFont(juce::FontOptions(8.2f));
+        g.drawFittedText(juce::String("MORPH TRAJECTORY  //  ")+law.morphTrajectory,lawBox.reduced(8,3).toNearestInt(),juce::Justification::centredLeft,2);
+
+        // Gothic manifestation window. Audio energy controls illumination while
+        // MORPH controls creature-specific geometry.
+        auto altar=juce::Rectangle<float>(22.f,136.f,(float)getWidth()-44.f,190.f);
+        juce::Path arch;
+        arch.startNewSubPath(altar.getX(),altar.getBottom());
+        arch.lineTo(altar.getX(),altar.getY()+50.f);
+        arch.quadraticTo(altar.getCentreX(),altar.getY()-34.f,altar.getRight(),altar.getY()+50.f);
+        arch.lineTo(altar.getRight(),altar.getBottom());arch.closeSubPath();
+        g.setColour(juce::Colour(0xff020305));g.fillPath(arch);
+        g.setColour(accent.withAlpha(.16f+.20f*e));g.strokePath(arch,juce::PathStrokeType(1.f+e));
+        g.setColour(accent.withAlpha(.018f+.13f*e));g.fillEllipse(altar.reduced(28.f-10.f*e));
+        drawManifestation(g,altar.reduced(18.f,12.f),type,crypt,m);
+        drawBehavior(g,altar.reduced(18.f,12.f),type,crypt);
+
+        // Live state reads like an instrument, not telemetry debug text.
         const float behavior=juce::jlimit(0.f,1.f,behaviorMeter(type,crypt));
-        auto meter=juce::Rectangle<float>(18.f,(float)getHeight()-62.f,(float)getWidth()-36.f,8.f);
-        g.setColour(juce::Colour(0xff17191d)); g.fillRoundedRectangle(meter,2.f);
-        g.setColour(accent.withAlpha(.26f+.62f*energy)); g.fillRoundedRectangle(meter.withWidth(meter.getWidth()*energy),2.f);
-        g.setColour(juce::Colour(0xffa69b8c)); g.setFont(juce::FontOptions(7.f));
-        g.drawText("SOUL "+juce::String((int)std::lround(energy*100.f))+"%  //  "+behaviorName(type,crypt,behavior),12,getHeight()-50,getWidth()-24,13,juce::Justification::centred);
+        g.setColour(juce::Colour(0xff8d857a));g.setFont(juce::FontOptions(8.f));
+        g.drawText(powered?(e>.025f?"MANIFESTING  //  "+behaviorName(type,crypt,behavior):"SUMMONED  //  WAITING"):"DORMANT",
+                   20,331,getWidth()-40,15,juce::Justification::centred);
+        auto meter=juce::Rectangle<float>(30.f,350.f,(float)getWidth()-60.f,5.f);
+        g.setColour(juce::Colour(0xff17181b));g.fillRoundedRectangle(meter,2.f);
+        g.setColour(accent.withAlpha(.32f+.58f*e));g.fillRoundedRectangle(meter.withWidth(meter.getWidth()*e),2.f);
+
+        g.setColour(juce::Colour(0xffb8ad9d));g.setFont(juce::FontOptions(8.2f));
+        g.drawText("CHOOSE CREATURE",20,366,getWidth()-40,14,juce::Justification::centredLeft);
+        g.drawText("TRANSFORM",20,getHeight()-122,getWidth()-40,14,juce::Justification::centred);
+
+        // Power lamp.
+        const auto lamp=juce::Rectangle<float>((float)getWidth()-28.f,16.f,10.f,10.f);
+        g.setColour(accent.withAlpha(powered?(.30f+.70f*e):.08f));g.fillEllipse(lamp.expanded(powered?e*3.f:0.f));
     }
 
     void resized() override
     {
-        power.setBounds(getWidth()-74,18,62,26);
-        creature.setBounds(14,70,getWidth()-28,32);
-        const int d=juce::jmin(132,getHeight()-180);
-        morph.setBounds((getWidth()-d)/2,getHeight()-190,d,d);
+        power.setBounds(getWidth()-92,10,68,28);
+        creature.setBounds(20,383,getWidth()-40,34);
+        const int d=juce::jmin(156,getHeight()-350);
+        morph.setBounds((getWidth()-d)/2,getHeight()-108,d,d);
     }
 
 private:
