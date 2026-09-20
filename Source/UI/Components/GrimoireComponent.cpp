@@ -2,6 +2,7 @@
 #include "../../Core/HorrorCastleProcessor.h"
 #include "../Theme/CastleTheme.h"
 #include "../Theme/CastleGraphics.h"
+#include "../../HorrorCastle/SynthesisFamilyContract.h"
 #include <algorithm>
 
 namespace horrorcastle {
@@ -86,7 +87,36 @@ void GrimoireComponent::refreshButtons()
     pageLabel.setText("PAGE "+String(page+1)+" / "+String(pageCount())+"   •   "+String(filtered.size())+" SPELLS",dontSendNotification);
 }
 
-void GrimoireComponent::selectFactoryIndex(int i){selected=i;refreshButtons();updateDetail();repaint();}
+void GrimoireComponent::selectFactoryIndex(int i)
+{
+    selected=i;
+    refreshButtons();
+    updateDetail();
+    repaint();
+
+    // v1.3: browsing is auditioning. A single click recalls the spell so the
+    // Grimoire behaves like an instrument browser instead of a two-step form.
+    if(selected>=0 && selected<(int)spells.size() && processor.loadFactoryPreset(selected))
+        if(onStatus) onStatus("GRIMOIRE // "+spells[(size_t)selected].name.toUpperCase()+" SUMMONED");
+}
+
+void GrimoireComponent::showCreatureGuide(bool crypt,int type)
+{
+    type=juce::jlimit(0,17,type);
+    const auto& law=synthesis_contract::get(static_cast<GeneratorType>(type),crypt);
+    title.setText(juce::String(law.creature).toUpperCase(),dontSendNotification);
+    subtitle.setText(law.family,dontSendNotification);
+    description.setText(juce::String("SUMMON // ")+law.excitation
+        +"\n\nFORM // "+law.synthesisMethod
+        +"\n\nSPECTRAL MOTION // "+law.spectralMotion
+        +"\n\nARTICULATION // "+law.articulationLaw
+        +"\n\nNONLINEARITY // "+law.nonlinearity
+        +"\n\nSTEREO // "+law.stereoLaw
+        +"\n\nTRANSFORM // "+law.morphTrajectory,dontSendNotification);
+    tags.setText(crypt?"CRYPT CREATURE // SYNTHESIS CONTRACT":"TOWER CREATURE // SYNTHESIS CONTRACT",dontSendNotification);
+    summonButton.setEnabled(false); favouriteButton.setEnabled(false);
+    repaint();
+}
 
 void GrimoireComponent::updateDetail()
 {

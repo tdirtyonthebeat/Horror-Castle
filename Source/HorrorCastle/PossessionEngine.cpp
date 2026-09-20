@@ -35,9 +35,10 @@ void PossessionEngine::processSample(float cL, float cR, float tL, float tR,
     cryptEnv += envA * (envIn - cryptEnv);
 
     // BLOOD FEED: CRYPT's physical envelope drives TOWER's intensity and edge.
-    const float bloodGain = 1.f + blood * cryptEnv * 2.8f;
-    tL = std::tanh(tL * bloodGain + cL * cryptEnv * blood * .12f);
-    tR = std::tanh(tR * bloodGain + cR * cryptEnv * blood * .12f);
+    const float bloodDrive = blood * cryptEnv;
+    const float bloodGain = 1.f + bloodDrive * 6.0f;
+    tL = std::tanh(tL * bloodGain + cL * bloodDrive * .32f);
+    tR = std::tanh(tR * bloodGain + cR * bloodDrive * .32f);
 
     // AETHER LEAK: only TOWER's high-frequency residue contaminates CRYPT.
     const float airA = 1.f - std::exp(-juce::MathConstants<float>::twoPi * 1700.f / (float)sr);

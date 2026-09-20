@@ -253,13 +253,13 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
         auto addG=[&](int i){
             makeChoice(panel.genType[i],param::id(s,i+1,"type"),"GEN "+String(i+1));
             makeControl(panel.genLevel[i],param::id(s,i+1,"level"),"LEVEL");
-            makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"SHAPE");
+            makeControl(panel.genShape[i],param::id(s,i+1,"shape"),"MORPH");
             makeControl(panel.genTune[i],param::id(s,i+1,"tune"),"TUNE");
             setAccent(panel.genType[i],key);setAccent(panel.genLevel[i],key);setAccent(panel.genShape[i],key);setAccent(panel.genTune[i],key);
         };
         for(int i=0;i<3;++i)addG(i);
         makeControl(panel.noise,param::noise(s,"level"),"NOISE");
-        makeControl(panel.f1Cut,param::fid(s,1,"cutoff"),"CUTOFF A");
+        makeControl(panel.f1Cut,param::fid(s,1,"cutoff"),"TONE");
         makeControl(panel.f1Res,param::fid(s,1,"resonance"),"RES A");
         makeControl(panel.f2Cut,param::fid(s,2,"cutoff"),"CUTOFF B");
         makeControl(panel.f2Res,param::fid(s,2,"resonance"),"RES B");
@@ -285,15 +285,15 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
 
     makeChoice(ritualMode,"ritual.mode","MODE");
     ritualMode.box->onChange=[this]{status.setText("RITUAL // "+ritualMode.box->getText().toUpperCase(),dontSendNotification);};
-    makeControl(ritualMix,"ritual.mix","MIX");makeControl(ritualDepth,"ritual.depth","DEPTH");makeControl(ritualDrive,"ritual.drive","FURY");
+    makeControl(ritualMix,"ritual.mix","RITUAL");makeControl(ritualDepth,"ritual.depth","DEPTH");makeControl(ritualDrive,"ritual.drive","FURY");
     makeControl(ritualWidth,"ritual.width","WIDTH");makeControl(ritualFeedback,"ritual.feedback","FEEDBACK");
     for(auto* c:{&ritualMix,&ritualDepth,&ritualDrive,&ritualWidth,&ritualFeedback})setAccent(*c,"ritual");
     setAccent(ritualMode,"ritual");
 
-    makeControl(graveReverb,"grave.reverb","REVERB");makeControl(graveDelay,"grave.delay","DELAY");
+    makeControl(graveReverb,"grave.reverb","SPACE");makeControl(graveDelay,"grave.delay","DELAY");
     makeControl(graveFeedback,"grave.feedback","FEEDBACK");makeControl(graveTone,"grave.cutoff","TONE");makeControl(graveOutput,"grave.output","OUTPUT");
     for(auto* c:{&graveReverb,&graveDelay,&graveFeedback,&graveTone,&graveOutput})setAccent(*c,"grave");
-    makeControl(hexAmount,"global.hex","HEX DEPTH");setAccent(hexAmount,"hex");
+    makeControl(hexAmount,"global.hex","CURSE");setAccent(hexAmount,"hex");
 
     // Spectral Corpse altar.
     makeControl(corpsePosition,"corpse.position","POSITION");makeControl(corpseRot,"corpse.rot","ROT");
@@ -327,7 +327,7 @@ HorrorCastleEditor::HorrorCastleEditor(HorrorCastleProcessor& p)
     corpseStatus.setText("24 PARTIALS  //  FRAME MORPH  //  FORMANT  //  ROT",dontSendNotification);
     corpseStatus.setFont(FontOptions(8.5f));corpseStatus.setColour(Label::textColourId,theme::parchment().withAlpha(.58f));addAndMakeVisible(corpseStatus);
 
-    status.setText("STONE & SHADOW  //  SPECTRAL CORPSE ACTIVE",dontSendNotification);
+    status.setText("SIMPLE CASTLE  //  PICK A CREATURE + MORPH IT  //  RITUAL + SPACE + CURSE",dontSendNotification);
     status.setFont(FontOptions(8.5f));status.setColour(Label::textColourId,theme::parchment().withAlpha(.54f));addAndMakeVisible(status);
 
     uiReady=true;
@@ -360,8 +360,14 @@ HorrorCastleEditor::~HorrorCastleEditor()
 void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
 {
     auto setControlVisible=[&](Control& c){if(c.label)c.label->setVisible(show);if(c.slider)c.slider->setVisible(show);};
+    auto hideMain=[&](Control& c){if(c.label)c.label->setVisible(false);if(c.slider)c.slider->setVisible(false);};
     for(auto* c:{&corpsePosition,&corpseRot,&corpseFormant,&corpseInharmonic,
                   &crypt.f1Drive,&crypt.f2Drive,&tower.f1Drive,&tower.f2Drive,
+                  &crypt.genTune[0],&crypt.genTune[1],&crypt.genTune[2],
+                  &tower.genTune[0],&tower.genTune[1],&tower.genTune[2],
+                  &crypt.noise,&crypt.f1Res,&crypt.f2Cut,&crypt.f2Res,&crypt.balance,
+                  &tower.noise,&tower.f1Res,&tower.f2Cut,&tower.f2Res,&tower.balance,
+                  &ritualWidth,&ritualFeedback,&graveFeedback,
                   &bloodFeed,&aetherLeak,&soulExchange,&possessionHaunt,
                   &ritualsBpm,&ritualsGate,&ritualsProbability,&ritualsSwing,&ritualsOctaves})
         setControlVisible(*c);
@@ -369,10 +375,22 @@ void HorrorCastleEditor::setAdvancedComponentsVisible(bool show)
     for(auto* t:{&crypt.crossFm,&crypt.crossRing,&tower.crossFm,&tower.crossRing,&ritualsEnabled})
         if(t->button)t->button->setVisible(show);
 
-    for(auto* c:{&ritualsPattern,&ritualsRate}){
+    for(auto* c:{&ritualsPattern,&ritualsRate,&crypt.route,&tower.route}){
         if(c->label)c->label->setVisible(show);
         if(c->box)c->box->setVisible(show);
     }
+
+    // SIMPLE CASTLE: the main page keeps only controls with an immediate,
+    // unmistakable musical job.  Everything else remains automatable and
+    // preset-compatible, but lives behind UNDERCROFT / DEEP EDIT.
+    for(auto* c:{&ritualDepth,&ritualDrive,&graveDelay,&graveTone,&graveOutput})
+        setControlVisible(*c);
+
+    // Main-page essentials remain visible in both modes; secondary controls
+    // disappear on load and return only when the user explicitly asks for depth.
+    if(!show)
+        for(auto* c:{&ritualDepth,&ritualDrive,&graveDelay,&graveTone,&graveOutput})
+            hideMain(*c);
 
     for(auto* l:{&undercroftTitle,&corpseTitle,&corpseStatus,&advancedCryptTitle,&advancedTowerTitle,&possessionTitle,&ritualsTitle})
         l->setVisible(show);
@@ -476,6 +494,32 @@ void HorrorCastleEditor::resized()
     B(*ritualsPattern.label,144,858,100,14);B(*ritualsPattern.box,144,876,132,22);
     B(*ritualsRate.label,286,858,72,14);B(*ritualsRate.box,286,876,82,22);
     int rx=390;for(auto* c:{&ritualsBpm,&ritualsGate,&ritualsProbability,&ritualsSwing,&ritualsOctaves}){knob(*c,rx,856);rx+=100;}
+}
+
+void HorrorCastleEditor::setPerformanceMode(bool simplified)
+{
+    // PERFORMANCE is the default Necromancer flow. Generator identity + MORPH
+    // stay visible; tuning, mixer/filter plumbing, HEX and Grave/Ritual internals
+    // recede until the user explicitly asks for the laboratory.
+    auto showControl=[](Control& c,bool show){if(c.label)c.label->setVisible(show);if(c.slider)c.slider->setVisible(show);};
+    auto showChoice=[](Choice& c,bool show){if(c.label)c.label->setVisible(show);if(c.box)c.box->setVisible(show);};
+    auto simplifyScene=[&](ScenePanel& p){
+        for(int i=0;i<3;++i){showControl(p.genLevel[(size_t)i],!simplified);showControl(p.genTune[(size_t)i],!simplified);}
+        for(auto* x:{&p.noise,&p.f1Cut,&p.f1Res,&p.f2Cut,&p.f2Res,&p.master,&p.balance,&p.character})showControl(*x,!simplified);
+        showChoice(p.route,!simplified);
+    };
+    simplifyScene(crypt); simplifyScene(tower);
+    // In Performance mode the legacy scene panels themselves disappear. Their
+    // opaque interiors were masking the castle artwork and visually fighting the
+    // new two-oscillator chambers. The Laboratory restores them unchanged.
+    crypt.setVisible(!simplified); tower.setVisible(!simplified);
+    centerSpine.setVisible(!simplified);
+    for(auto* x:{&ritualMix,&ritualDepth,&ritualDrive,&ritualWidth,&ritualFeedback,&graveReverb,&graveDelay,&graveFeedback,&graveTone,&graveOutput,&hexAmount})showControl(*x,!simplified);
+    showChoice(ritualMode,!simplified);
+    ritualTitle.setVisible(!simplified);graveTitle.setVisible(!simplified);status.setVisible(!simplified);
+    hexMatrix.setVisible(!simplified);curseInspector.setVisible(!simplified);
+    undercroftToggle.setVisible(!simplified);
+    if(simplified){setUndercroftVisible(false);setGrimoireVisible(false);}
 }
 
 void HorrorCastleEditor::timerCallback()

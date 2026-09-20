@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.3.0 — Living Engines
+
+- Rebuilt PM around a per-voice, phase-continuous modulator with smoothed ratios and Nyquist-aware index reduction so TRANSFORM automation no longer jumps between integer-ratio steps.
+- Fixed creature-family stereo motion bypassing the CRYPT/TOWER scene masters; a muted chamber now reaches true silence.
+- Rebalanced BLOOD FEED so an awake CRYPT/TOWER pair receives a clearly audible, bounded envelope transfer.
+- Updated signature fixtures for the intentional single-oscillator INIT state and made CI execute, rather than only compile, the full signature regression suite.
+- Removed two accidental manifest overflow entries so the documented append-only factory bank is exactly 100 spells (indices 0–99).
+- Replaced the shared FM generator's simple nested-sine path with an independent phase-continuous four-operator Ritual FM engine.
+- Shape now morphs continuously through serial-chain, branching, and dual-carrier operator graphs rather than selecting fixed algorithms.
+- Gave CRYPT and TOWER different FM ratio families and chamber-aware nonlinear finishing while preserving the existing FM generator index.
+- Added sample-accurate pitch bend, CC1 mod wheel, channel pressure, and polyphonic aftertouch handling.
+- Appended Mod Wheel and Aftertouch as HEX sources without shifting the existing source indices used by older states.
+- Performance expression now increases Ritual FM modulation complexity and can be routed through HEX.
+- Changed factory Grimoire browsing to recall a spell immediately on click; the previous confirmation action remains as RE-SUMMON.
+- Added `OPENAUDIO_REFERENCE_LEDGER.md` to document open-source DSP research targets and the independent-implementation/provenance boundary.
+- Product/build metadata updated to 1.3.0. Existing v1.2 Stone & Shadow assets, Spectral Corpse, Ritual, Grave, Possession, Rituals, and 40-spell Grimoire remain intact.
+
 ## 1.2.0 — Stone & Shadow
 
 - Fixed AppleClang overload ambiguity in two UNDERCROFT `Graphics::fillRect` calls by making all rectangle arguments explicitly floating-point.

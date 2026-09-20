@@ -2,6 +2,8 @@
 #include "../Source/HorrorCastle/CastleEngine.h"
 #include "../Source/HorrorCastle/CastleParameters.h"
 #include "../Source/HorrorCastle/Grimoire.h"
+#include "../Source/HorrorCastle/SynthesisFamilyContract.h"
+#include "../Source/HorrorCastle/PerformanceCreatureRoster.h"
 #include <cmath>
 #include <iostream>
 #include <functional>
@@ -61,6 +63,7 @@ Render renderAt(double sampleRate,int block,double seconds,const std::function<v
 Render render(double seconds,const std::function<void(HarnessProcessor&)>& configure){return renderAt(48000.0,256,seconds,configure);}
 
 float rms(const Render& r){double s=0;for(float x:r.left)s+=x*x;return r.left.empty()?0.f:(float)std::sqrt(s/(double)r.left.size());}
+float dcOffsetProxy(const Render& r){if(r.left.empty())return 0.f;double m=0;for(float x:r.left)m+=x;return (float)std::abs(m/(double)r.left.size());}
 float brightnessProxy(const Render& r){
     if(r.left.size()<2)return 0.f;
     double d=0,s=0;
@@ -76,12 +79,48 @@ float lowBodyProxy(const Render& r){
     return total>1.0e-12?(float)std::sqrt(low/total):0.f;
 }
 float difference(const Render& a,const Render& b){const size_t n=std::min(a.left.size(),b.left.size());double s=0;for(size_t i=0;i<n;++i){const double d=a.left[i]-b.left[i];s+=d*d;}const float d=n?(float)std::sqrt(s/(double)n):0.f;return d/std::max(.0001f,std::max(rms(a),rms(b)));}
+float waveformCorrelation(const Render& a,const Render& b){
+    const size_t n=std::min(a.left.size(),b.left.size());if(n<2)return 1.f;
+    double ab=0,aa=0,bb=0;for(size_t i=0;i<n;++i){const double x=a.left[i],y=b.left[i];ab+=x*y;aa+=x*x;bb+=y*y;}
+    return (aa>1.0e-12&&bb>1.0e-12)?(float)std::abs(ab/std::sqrt(aa*bb)):1.f;
+}
+float crestProxy(const Render& r){float peak=0.f;for(float x:r.left)peak=std::max(peak,std::abs(x));return peak/std::max(.0001f,rms(r));}
+float transientProxy(const Render& r){if(r.left.empty())return 0.f;const size_t n=std::min<size_t>(r.left.size(),2400);double a=0,b=0;for(size_t i=0;i<n;++i)a+=r.left[i]*r.left[i];for(size_t i=n;i<std::min(r.left.size(),n*4);++i)b+=r.left[i]*r.left[i];const float ar=n?(float)std::sqrt(a/n):0.f;const size_t bn=std::min(r.left.size(),n*4)-n;const float br=bn?(float)std::sqrt(b/bn):0.f;return ar/std::max(.0001f,br);}
+float stereoProxy(const Render& r){const size_t n=std::min(r.left.size(),r.right.size());double side=0,mid=0;for(size_t i=0;i<n;++i){const double l=r.left[i],rr=r.right[i];side+=(l-rr)*(l-rr);mid+=(l+rr)*(l+rr);}return mid>1.0e-12?(float)std::sqrt(side/mid):0.f;}
+float temporalFluxProxy(const Render& r){if(r.left.size()<1024)return 0.f;constexpr size_t hop=512;double prev=0,flux=0;int frames=0;for(size_t p=0;p+hop<=r.left.size();p+=hop){double e=0;for(size_t i=p;i<p+hop;++i)e+=r.left[i]*r.left[i];e=std::sqrt(e/hop);if(frames>0)flux+=std::abs(e-prev);prev=e;++frames;}return frames>1?(float)(flux/(frames-1))/std::max(.0001f,rms(r)):0.f;}
+float contractDistance(const SynthesisFamilyContract& a,const SynthesisFamilyContract& b){
+    const float d0=a.morphCurve-b.morphCurve,d1=a.articulationPower-b.articulationPower,d2=a.transientBoost-b.transientBoost;
+    const float d3=a.sustainBias-b.sustainBias,d4=a.clarity-b.clarity,d5=a.nonlinearDrive-b.nonlinearDrive,d6=a.stereoMotion-b.stereoMotion;
+    return std::sqrt(d0*d0+d1*d1+d2*d2+d3*d3+d4*d4+d5*d5+d6*d6);
+}
+
 bool finite(const Render& r){for(float x:r.left)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;for(float x:r.right)if(!std::isfinite(x)||std::abs(x)>1.01f)return false;return true;}
 float tailRms(const Render& r,size_t count=4800){if(r.left.empty())return 0.f;const size_t begin=r.left.size()>count?r.left.size()-count:0;double s=0;size_t n=0;for(size_t i=begin;i<r.left.size();++i){s+=r.left[i]*r.left[i];++n;}return n?(float)std::sqrt(s/(double)n):0.f;}
 void setPossession(HarnessProcessor& h,const char* id,float amount){setParam(h,juce::String("possession.")+id,amount);}
 void hexDestination(HarnessProcessor& h,int destination,float amount=.72f){setParam(h,"hex.curse1.source",6.f);setParam(h,"hex.curse1.curse",0.f);setParam(h,"hex.curse1.destination",(float)destination);setParam(h,"hex.curse1.amount",amount);}
 
-void sceneOnly(HarnessProcessor& h,bool crypt){setParam(h,"crypt.master",crypt?.86f:0.f);setParam(h,"tower.master",crypt?0.f:.86f);setParam(h,crypt?"crypt.character":"tower.character",.82f);}
+void sceneOnly(HarnessProcessor& h,bool crypt)
+{
+    setParam(h,"crypt.master",crypt?.86f:0.f);setParam(h,"tower.master",crypt?0.f:.86f);
+    setParam(h,crypt?"crypt.character":"tower.character",.82f);
+    for(const auto scene:{juce::String("crypt"),juce::String("tower")})
+        for(int i=1;i<=3;++i){
+            const bool awake=(scene=="crypt")==crypt&&i==1;
+            setParam(h,scene+".g"+juce::String(i)+".enabled",awake?1.f:0.f);
+            setParam(h,scene+".g"+juce::String(i)+".level",awake?.78f:0.f);
+        }
+}
+void pairedScenes(HarnessProcessor& h)
+{
+    setParam(h,"crypt.master",.72f);setParam(h,"tower.master",.72f);
+    for(const auto scene:{juce::String("crypt"),juce::String("tower")})
+        for(int i=1;i<=3;++i){
+            setParam(h,scene+".g"+juce::String(i)+".enabled",i==1?1.f:0.f);
+            setParam(h,scene+".g"+juce::String(i)+".level",i==1?.76f:0.f);
+        }
+    setParam(h,"crypt.g1.type",0.f);setParam(h,"crypt.g1.shape",.31f);
+    setParam(h,"tower.g1.type",1.f);setParam(h,"tower.g1.shape",.67f);
+}
 void ritual(HarnessProcessor& h,int mode){setParam(h,"ritual.mode",(float)mode);setParam(h,"ritual.mix",.82f);setParam(h,"ritual.depth",.58f);setParam(h,"ritual.drive",.46f);setParam(h,"ritual.feedback",.42f);}
 void curse(HarnessProcessor& h,int curseKind){setParam(h,"hex.curse1.source",6.f);setParam(h,"hex.curse1.curse",(float)curseKind);setParam(h,"hex.curse1.destination",9.f);setParam(h,"hex.curse1.amount",.22f);}
 
@@ -99,10 +138,47 @@ void exclusiveEngine(HarnessProcessor& h,bool crypt,int typeIndex)
     setParam(h,scene+".g1.shape",.58f);
 }
 
+constexpr int MorphSweepBlock = 64;
+Render renderMorphSweep(bool crypt,int typeIndex)
+{
+    constexpr double sampleRate=48000.0;
+    constexpr int total=48000;
+    HarnessProcessor h;neutral(h);exclusiveEngine(h,crypt,typeIndex);
+    CastleEngine engine;engine.prepare(sampleRate,MorphSweepBlock);
+    Render out;out.left.reserve(total);out.right.reserve(total);
+    juce::AudioBuffer<float> audio(2,MorphSweepBlock);
+    const juce::String shapeId=crypt?"crypt.g1.shape":"tower.g1.shape";
+    for(int pos=0;pos<total;pos+=MorphSweepBlock){
+        setParam(h,shapeId,juce::jlimit(0.f,1.f,(float)pos/(float)(total-MorphSweepBlock)));
+        engine.setParameters(h.state);
+        juce::MidiBuffer midi;if(pos==0)midi.addEvent(juce::MidiMessage::noteOn(1,60,(juce::uint8)104),0);
+        engine.render(audio,midi);
+        const int n=juce::jmin(MorphSweepBlock,total-pos);
+        for(int i=0;i<n;++i){out.left.push_back(audio.getSample(0,i));out.right.push_back(audio.getSample(1,i));}
+    }
+    return out;
+}
+
+float blockBoundarySpikeProxy(const Render& r,int block)
+{
+    if(r.left.size()<(size_t)(block*10))return 1000.f;
+    const size_t begin=(size_t)block*4,end=r.left.size()-(size_t)block*4;
+    double ordinaryEnergy=0;size_t ordinaryCount=0;float boundaryPeak=0.f;
+    for(size_t i=begin+1;i<end;++i){
+        const float d=std::abs(r.left[i]-r.left[i-1]);
+        if(i%(size_t)block==0)boundaryPeak=std::max(boundaryPeak,d);
+        else{ordinaryEnergy+=(double)d*d;++ordinaryCount;}
+    }
+    const float ordinaryRms=ordinaryCount?(float)std::sqrt(ordinaryEnergy/(double)ordinaryCount):0.f;
+    return boundaryPeak/std::max(1.0e-6f,ordinaryRms);
+}
+
 bool writeWav(const juce::File& file,const Render& r)
 {
     file.deleteFile(); juce::WavAudioFormat format;
-    std::unique_ptr<juce::AudioFormatWriter> writer(format.createWriterFor(new juce::FileOutputStream(file),48000.0,2,16,{},0));
+    std::unique_ptr<juce::OutputStream> stream=std::make_unique<juce::FileOutputStream>(file);
+    const auto options=juce::AudioFormatWriterOptions{}.withSampleRate(48000.0).withNumChannels(2).withBitsPerSample(16);
+    auto writer=format.createWriterFor(stream,options);
     if(!writer)return false; juce::AudioBuffer<float> b(2,(int)r.left.size());
     b.copyFrom(0,0,r.left.data(),(int)r.left.size());b.copyFrom(1,0,r.right.data(),(int)r.right.size());
     return writer->writeFromAudioSampleBuffer(b,0,b.getNumSamples());
@@ -128,6 +204,15 @@ int main(int argc,char* argv[])
     check(towerBrightness>cryptBrightness*1.08f,"TOWER is spectrally brighter than CRYPT");
     check(cryptLow>towerLow*1.08f,"CRYPT carries more low-body energy than TOWER");
 
+    // Regression for the former TOWER-wide bell injection: non-bell public engines
+    // must remain materially different from Bell Glass and from one another.
+    auto towerPM=render(.9,[](auto& h){exclusiveEngine(h,false,3);});
+    auto towerVector=render(.9,[](auto& h){exclusiveEngine(h,false,4);});
+    auto towerSiren=render(.9,[](auto& h){exclusiveEngine(h,false,17);});
+    auto towerBellOnly=render(.9,[](auto& h){exclusiveEngine(h,false,8);});
+    check(difference(towerPM,towerBellOnly)>.08f&&difference(towerVector,towerBellOnly)>.08f&&difference(towerSiren,towerBellOnly)>.08f,
+          "TOWER room no longer imposes Bell Glass ringing on every creature");
+
 
     auto undercrypt=render(1.1,[](auto& h){exclusiveEngine(h,true,8);});
     auto corpse=render(1.1,[](auto& h){exclusiveEngine(h,true,9);});
@@ -150,6 +235,143 @@ int main(int argc,char* argv[])
     std::cout<<"INFO  exclusive brightness(CORPSE/SPIRE)="<<corpseBrightness<<"/"<<spireBrightness
              <<" ratio="<<(corpseBrightness>1.0e-9f?spireBrightness/corpseBrightness:0.f)<<"\n";
     check(spireBrightness>corpseBrightness*1.10f,"SPECTRAL SPIRE lives above CORPSE");
+
+    // Synthesis Family Contract gate: every generator must declare all seven
+    // behavioral laws, and the numeric implementation vectors must occupy
+    // distinct regions before the audio test even runs.
+    for(bool isCrypt : {true,false})
+    {
+        float nearestContract=1000.f;
+        bool declarationsComplete=true;
+        for(int type=0;type<18;++type)
+        {
+            const auto& a=synthesis_contract::get(static_cast<GeneratorType>(type),isCrypt);
+            declarationsComplete=declarationsComplete
+                && a.excitation[0] && a.synthesisMethod[0] && a.spectralMotion[0]
+                && a.articulationLaw[0] && a.nonlinearity[0] && a.stereoLaw[0]
+                && a.morphTrajectory[0];
+            for(int other=type+1;other<18;++other)
+                nearestContract=std::min(nearestContract,contractDistance(
+                    a,synthesis_contract::get(static_cast<GeneratorType>(other),isCrypt)));
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest synthesis-contract region="<<nearestContract<<"\n";
+        check(declarationsComplete,isCrypt?"all CRYPT generators declare seven synthesis laws":"all TOWER generators declare seven synthesis laws");
+        check(nearestContract>.025f,isCrypt?"CRYPT synthesis contracts occupy distinct regions":"TOWER synthesis contracts occupy distinct regions");
+    }
+
+    // PUBLIC PERFORMANCE ROSTER gate: only the creatures exposed on the main
+    // two-oscillator surface need to meet the stricter "instantly different" bar.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<Render> publicFingerprints;
+        std::vector<int> types;
+        if(isCrypt) types.assign(performance_roster::crypt.begin(),performance_roster::crypt.end());
+        else types.assign(performance_roster::tower.begin(),performance_roster::tower.end());
+        float nearestPublic=1000.f,maxPublicCorr=0.f;
+        for(const int type:types)
+            publicFingerprints.push_back(render(.9,[isCrypt,type](auto& h){
+                exclusiveEngine(h,isCrypt,type);
+                setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.58f);
+            }));
+        for(size_t i=0;i<publicFingerprints.size();++i)
+            for(size_t j=i+1;j<publicFingerprints.size();++j){
+                nearestPublic=std::min(nearestPublic,difference(publicFingerprints[i],publicFingerprints[j]));
+                maxPublicCorr=std::max(maxPublicCorr,waveformCorrelation(publicFingerprints[i],publicFingerprints[j]));
+            }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" public-roster nearest="<<nearestPublic
+                 <<" correlation="<<maxPublicCorr<<" count="<<types.size()<<"\n";
+        check(nearestPublic>.045f,isCrypt?"public CRYPT creatures are clearly separated":"public TOWER creatures are clearly separated");
+        check(maxPublicCorr<.992f,isCrypt?"public CRYPT creatures avoid near-duplicate timbre":"public TOWER creatures avoid near-duplicate timbre");
+    }
+
+    // Full compatibility generator fingerprint gate: hidden/legacy engines still
+    // must remain valid and morphable even though Performance exposes a smaller roster.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<Render> fingerprints;
+        fingerprints.reserve(18);
+        bool allFinite=true, allMorph=true;
+        float nearest=1000.f,maxCorrelation=0.f; int corrA=-1,corrB=-1;
+        for(int type=0;type<18;++type)
+        {
+            auto base=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.18f);});
+            auto middle=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.52f);});
+            auto moved=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);setParam(h,isCrypt?"crypt.g1.shape":"tower.g1.shape",.88f);});
+            allFinite=allFinite&&finite(base)&&finite(middle)&&finite(moved)&&rms(base)>.00015f;
+            const float lowMid=difference(base,middle),midHigh=difference(middle,moved),lowHigh=difference(base,moved);
+            allMorph=allMorph&&lowMid>.004f&&midHigh>.004f&&lowHigh>.010f;
+            allFinite=allFinite&&dcOffsetProxy(base)<.035f&&dcOffsetProxy(middle)<.035f&&dcOffsetProxy(moved)<.035f;
+            fingerprints.push_back(std::move(base));
+        }
+        for(size_t i=0;i<fingerprints.size();++i)
+            for(size_t j=i+1;j<fingerprints.size();++j){
+                nearest=std::min(nearest,difference(fingerprints[i],fingerprints[j]));
+                const float corr=waveformCorrelation(fingerprints[i],fingerprints[j]);
+                if(corr>maxCorrelation){maxCorrelation=corr;corrA=(int)i;corrB=(int)j;}
+            }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" nearest generator fingerprint distance="<<nearest
+                 <<" max correlation="<<maxCorrelation<<" pair="<<corrA<<"/"<<corrB<<"\n";
+        check(allMorph,isCrypt?"every CRYPT MORPH has audible low/mid/high stages":"every TOWER MORPH has audible low/mid/high stages");
+        check(allFinite,isCrypt?"CRYPT creature outputs stay finite, audible and DC-clean":"TOWER creature outputs stay finite, audible and DC-clean");
+        check(nearest>.018f,isCrypt?"every CRYPT generator has a distinct fingerprint":"every TOWER generator has a distinct fingerprint");
+        check(maxCorrelation<.9985f,isCrypt?"no CRYPT creature collapses into a near-identical waveform":"no TOWER creature collapses into a near-identical waveform");
+        float crestMin=1000.f,crestMax=0.f,transientMin=1000.f,transientMax=0.f,stereoMin=1000.f,stereoMax=0.f,fluxMin=1000.f,fluxMax=0.f;
+        for(const auto& fp:fingerprints){
+            const float cr=crestProxy(fp),tr=transientProxy(fp),st=stereoProxy(fp),fl=temporalFluxProxy(fp);
+            crestMin=std::min(crestMin,cr);crestMax=std::max(crestMax,cr);
+            transientMin=std::min(transientMin,tr);transientMax=std::max(transientMax,tr);
+            stereoMin=std::min(stereoMin,st);stereoMax=std::max(stereoMax,st);
+            fluxMin=std::min(fluxMin,fl);fluxMax=std::max(fluxMax,fl);
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" behavioral-region spread crest="<<(crestMax-crestMin)
+                 <<" transient="<<(transientMax-transientMin)<<" stereo="<<(stereoMax-stereoMin)<<" flux="<<(fluxMax-fluxMin)<<"\n";
+        check(crestMax-crestMin>.10f,isCrypt?"CRYPT creatures differ dynamically":"TOWER creatures differ dynamically");
+        check(transientMax-transientMin>.05f,isCrypt?"CRYPT creatures differ in articulation":"TOWER creatures differ in articulation");
+        check(stereoMax-stereoMin>.002f,isCrypt?"CRYPT creatures differ in stereo law":"TOWER creatures differ in stereo law");
+        check(fluxMax-fluxMin>.002f,isCrypt?"CRYPT creatures differ in temporal motion":"TOWER creatures differ in temporal motion");
+    }
+
+    // Named synthesis-family spot checks keep the Castle honest: these are
+    // intentionally different techniques, not merely themed oscillator labels.
+    auto vaLow=render(.9,[](auto& h){exclusiveEngine(h,true,0);setParam(h,"crypt.g1.shape",.15f);});
+    auto vaHigh=render(.9,[](auto& h){exclusiveEngine(h,true,0);setParam(h,"crypt.g1.shape",.88f);});
+    auto wavetable=render(.9,[](auto& h){exclusiveEngine(h,true,1);setParam(h,"crypt.g1.shape",.72f);});
+    auto fmFamily=render(.9,[](auto& h){exclusiveEngine(h,true,2);setParam(h,"crypt.g1.shape",.72f);});
+    auto additive=render(.9,[](auto& h){exclusiveEngine(h,false,8);setParam(h,"tower.g1.shape",.72f);});
+    auto granular=render(.9,[](auto& h){exclusiveEngine(h,false,11);setParam(h,"tower.g1.shape",.82f);});
+    auto resynthesis=render(.9,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"crypt.g1.shape",.72f);});
+    check(difference(vaLow,vaHigh)>.02f,"VA subtractive MORPH changes waveform character");
+    check(difference(wavetable,fmFamily)>.08f,"Wavetable and FM families remain clearly distinct");
+    check(difference(additive,granular)>.08f,"Additive and granular families remain clearly distinct");
+    check(difference(granular,resynthesis)>.08f,"Granular and spectral-resynthesis families remain clearly distinct");
+
+    auto cryptPmSweep=renderMorphSweep(true,3),towerPmSweep=renderMorphSweep(false,3);
+    const float cryptPmSpike=blockBoundarySpikeProxy(cryptPmSweep,MorphSweepBlock);
+    const float towerPmSpike=blockBoundarySpikeProxy(towerPmSweep,MorphSweepBlock);
+    std::cout<<"INFO  PM MORPH boundary spike(C/T)="<<cryptPmSpike<<"/"<<towerPmSpike<<"\n";
+    check(finite(cryptPmSweep)&&finite(towerPmSweep)&&std::max(cryptPmSpike,towerPmSpike)<8.f,
+          "PM MORPH automation remains phase-continuous");
+
+    // Production-clarity gate: core families should keep useful headroom and
+    // should not collapse into the same saturated crest profile after polishing.
+    for(bool isCrypt : {true,false})
+    {
+        std::vector<int> clarityTypes = isCrypt ? std::vector<int>{0,1,2,6} : std::vector<int>{3,4,8,11,17};
+        float minRms=10.f,maxRms=0.f,minCrest=100.f,maxCrest=0.f;
+        for(const int type:clarityTypes){
+            auto fp=render(.9,[isCrypt,type](auto& h){exclusiveEngine(h,isCrypt,type);});
+            const float rr=rms(fp),cr=crestProxy(fp);
+            minRms=std::min(minRms,rr);maxRms=std::max(maxRms,rr);
+            minCrest=std::min(minCrest,cr);maxCrest=std::max(maxCrest,cr);
+            check(finite(fp)&&rr>.001f&&rr<.72f,isCrypt?"CRYPT public engine keeps clean headroom":"TOWER public engine keeps clean headroom");
+        }
+        std::cout<<"INFO  "<<(isCrypt?"CRYPT":"TOWER")<<" clarity rms="<<minRms<<".."<<maxRms
+                 <<" crest="<<minCrest<<".."<<maxCrest<<"\n";
+        check(maxCrest-minCrest>.04f,isCrypt?"CRYPT public engines retain dynamic identity":"TOWER public engines retain dynamic identity");
+    }
+
+    auto mastersMuted=render(.65,[](auto& h){pairedScenes(h);setParam(h,"crypt.master",0.f);setParam(h,"tower.master",0.f);});
+    check(rms(mastersMuted)<1.0e-6f,"scene masters silence creature stereo motion");
 
     auto corpsePositionSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.position",.96f);});
     auto corpseRotSweep=render(1.1,[](auto& h){exclusiveEngine(h,true,9);setParam(h,"corpse.rot",.92f);});
@@ -182,17 +404,20 @@ int main(int argc,char* argv[])
     check(difference(clean,madness)>.015f,"CLEAN Curse differs from MADNESS");
     check(difference(clean,blood)>.015f,"CLEAN Curse differs from BLOOD");
 
-    auto noPossession=render(1.25,[](auto&){});
-    auto bloodFeed=render(1.25,[](auto& h){setPossession(h,"bloodFeed",.82f);});
-    auto aetherLeak=render(1.25,[](auto& h){setPossession(h,"aetherLeak",.82f);});
-    auto soulExchange=render(1.25,[](auto& h){setPossession(h,"soulExchange",.82f);});
-    auto haunted=render(1.25,[](auto& h){setPossession(h,"haunt",.82f);});
+    auto noPossession=render(1.25,[](auto& h){pairedScenes(h);});
+    auto bloodFeed=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"bloodFeed",.82f);});
+    auto aetherLeak=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"aetherLeak",.82f);});
+    auto soulExchange=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"soulExchange",.82f);});
+    auto haunted=render(1.25,[](auto& h){pairedScenes(h);setPossession(h,"haunt",.82f);});
+    const float bloodDifference=difference(noPossession,bloodFeed),aetherDifference=difference(noPossession,aetherLeak);
+    const float soulDifference=difference(noPossession,soulExchange),hauntDifference=difference(noPossession,haunted);
+    std::cout<<"INFO  possession difference blood/aether/soul/haunt="<<bloodDifference<<"/"<<aetherDifference<<"/"<<soulDifference<<"/"<<hauntDifference<<"\n";
     check(finite(bloodFeed)&&finite(aetherLeak)&&finite(soulExchange)&&finite(haunted),"Possession Matrix remains finite");
-    check(difference(noPossession,bloodFeed)>.04f&&difference(noPossession,aetherLeak)>.04f&&difference(noPossession,soulExchange)>.04f&&difference(noPossession,haunted)>.02f,"Possession modes audibly affect the castle");
+    check(bloodDifference>.04f&&aetherDifference>.04f&&soulDifference>.04f&&hauntDifference>.02f,"Possession modes audibly affect an awake chamber pair");
 
     auto hexDread=render(1.1,[](auto& h){sceneOnly(h,true);hexDestination(h,11);});
     auto hexAether=render(1.1,[](auto& h){sceneOnly(h,false);hexDestination(h,12);});
-    auto hexSoul=render(1.1,[](auto& h){hexDestination(h,19);});
+    auto hexSoul=render(1.1,[](auto& h){pairedScenes(h);hexDestination(h,19);});
     check(difference(crypt,hexDread)>.015f,"HEX 2.0 reaches CRYPT DREAD");
     check(difference(tower,hexAether)>.015f,"HEX 2.0 reaches TOWER AETHER");
     check(difference(noPossession,hexSoul)>.015f,"HEX 2.0 reaches SOUL EXCHANGE");

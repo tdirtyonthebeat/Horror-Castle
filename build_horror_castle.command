@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 BUILD="$ROOT/build"
 CONFIG="Release"
 
-printf '\n🏰 HORROR CASTLE v1.2 — STONE & SHADOW\n'
+printf '\n🏰 HORROR CASTLE v1.3 — LIVING ENGINES\n'
 printf 'Project: %s\n\n' "$ROOT"
 
 if ! command -v cmake >/dev/null 2>&1; then
@@ -58,7 +58,7 @@ cmake --build "$BUILD" --config "$CONFIG" \
     -j "$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)"
 
 echo
-echo "✅ Horror Castle v1.2 build finished."
+echo "✅ Horror Castle v1.3 build finished."
 find "$BUILD" -type d \( -name "*.vst3" -o -name "*.component" -o -name "Horror Castle.app" \) -print 2>/dev/null || true
 
 if [[ "$RUN" == "1" ]]; then
