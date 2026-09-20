@@ -107,9 +107,9 @@ public:
         const float sy=(float)getHeight()/1086.0f;
         auto bounds=[&](int x,int y,int w,int h){return juce::Rectangle<int>((int)std::lround(x*sx),(int)std::lround(y*sy),(int)std::lround(w*sx),(int)std::lround(h*sy));};
 
-        flowTitle.setBounds(bounds(390,55,520,27));
-        laboratoryToggle.setBounds(bounds(930,55,180,27));
-        readGrimoire.setBounds(bounds(1120,55,170,27));
+        flowTitle.setBounds(bounds(368,54,548,28));
+        laboratoryToggle.setBounds(bounds(944,54,176,28));
+        readGrimoire.setBounds(bounds(1130,54,176,28));
         physicsToggle.setBounds(bounds(775,55,176,27));
         nervousToggle.setBounds(bounds(963,55,176,27));
         physics.setBounds(bounds(176,462,1096,238));
@@ -120,10 +120,10 @@ public:
         // preserving the reference composition while making the sound visible.
         // Performance is deliberately two-oscillator: one CRYPT creature and one
         // TOWER creature. The Laboratory retains the legacy three-slot machinery.
-        oscillators[0]->setBounds(bounds(92,108,430,380));
-        oscillators[1]->setBounds(bounds(926,108,430,380));
-        creaturePortrait.setBounds(bounds(54,760,430,270));
-        soulGlass.setBounds(bounds(506,760,436,270));
+        oscillators[0]->setBounds(bounds(70,104,486,520));
+        oscillators[1]->setBounds(bounds(892,104,486,520));
+        creaturePortrait.setBounds(bounds(52,730,420,306));
+        soulGlass.setBounds(bounds(494,730,466,306));
     }
 
 private:
